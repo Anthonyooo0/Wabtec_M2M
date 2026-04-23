@@ -37,11 +37,6 @@ export const Discrepancies: React.FC<DiscrepanciesProps> = ({
     [items],
   )
 
-  const awaitingAcceptance = useMemo(
-    () => items.filter((d) => d.kind === 'awaiting_acceptance'),
-    [items],
-  )
-
   const grouped = useMemo(() => {
     const g: Record<Severity, Discrepancy[]> = { critical: [], medium: [], value: [] }
     for (const d of items) {
@@ -80,19 +75,17 @@ export const Discrepancies: React.FC<DiscrepanciesProps> = ({
     )
   }
 
-  if (realDiscrepancyCount === 0 && (pendingIntake.length > 0 || awaitingAcceptance.length > 0)) {
+  if (realDiscrepancyCount === 0 && pendingIntake.length > 0) {
     return (
       <div className="view-transition space-y-8">
         {pendingIntake.length > 0 && (
           <PendingIntakeSection items={pendingIntake} acceptedDateByPo={acceptedDateByPo} />
         )}
-        {awaitingAcceptance.length > 0 && <AwaitingAcceptanceSection items={awaitingAcceptance} />}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
           <h3 className="font-bold text-slate-700 text-lg">No discrepancies</h3>
           <p className="mt-2 text-slate-500 text-sm max-w-md mx-auto">
-            The sections above aren&apos;t issues — they&apos;re just POs waiting on
-            workflow (not yet accepted on SCC, or recently accepted but not
-            yet booked in M2M).
+            The section above isn&apos;t an issue — POs recently accepted in SCC
+            and within the {PENDING_INTAKE_DAYS}-day intake grace period.
           </p>
         </div>
       </div>
@@ -104,7 +97,6 @@ export const Discrepancies: React.FC<DiscrepanciesProps> = ({
       {pendingIntake.length > 0 && (
         <PendingIntakeSection items={pendingIntake} acceptedDateByPo={acceptedDateByPo} />
       )}
-      {awaitingAcceptance.length > 0 && <AwaitingAcceptanceSection items={awaitingAcceptance} />}
       <SeveritySection
         title="Critical"
         accent="bg-red-500"
@@ -180,96 +172,6 @@ const PendingIntakeSection: React.FC<{
         </div>
       )}
     </section>
-  )
-}
-
-// POs that have never been accepted on SCC (still NEW, REVISED, or REJECTED)
-// aren't eligible to be in M2M yet — they're not a discrepancy, just a queue
-// waiting on Wabtec-side acceptance. Separate amber-tinted section so they
-// don't inflate the discrepancy count.
-const AwaitingAcceptanceSection: React.FC<{
-  items: Discrepancy[]
-}> = ({ items }) => {
-  const [open, setOpen] = useState(false)
-  if (items.length === 0) return null
-
-  return (
-    <section className="bg-amber-50/40 border border-amber-200/70 rounded-xl p-5">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-3 text-left"
-      >
-        <span className="w-1 h-8 bg-amber-400 rounded-sm" />
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h3 className="font-bold text-slate-700 text-base uppercase tracking-wider">
-              Awaiting Acceptance
-            </h3>
-            <span className="px-2 py-0.5 text-xs font-mono bg-white border border-amber-200 rounded text-amber-700">
-              {items.length.toLocaleString()}
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            POs on SCC that have never been accepted (still NEW, REVISED, or
-            REJECTED). Nothing for M2M to match — waiting on the Wabtec side,
-            not a discrepancy.
-          </p>
-        </div>
-        <svg
-          className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-90' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
-
-      {open && (
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {items.map((d, i) => (
-            <AwaitingAcceptanceCard key={`${d.wabtecPo}-${d.lineNo}-${i}`} d={d} />
-          ))}
-        </div>
-      )}
-    </section>
-  )
-}
-
-const AwaitingAcceptanceCard: React.FC<{ d: Discrepancy }> = ({ d }) => {
-  const status = (d.wabtec.action || '').trim() || '—'
-  return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
-      <div className="flex items-center justify-between mb-3">
-        <span className="font-mono text-xs font-bold text-slate-700">PO {d.wabtecPo}</span>
-        <span className="text-slate-400 text-xs">Line {d.lineNo}</span>
-      </div>
-      <div className="mb-3">
-        <span className="px-2 py-0.5 text-[10px] font-bold uppercase border rounded bg-amber-50 text-amber-700 border-amber-200">
-          {status}
-        </span>
-      </div>
-      <div className="text-xs text-slate-500 space-y-1">
-        <div className="flex justify-between">
-          <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Item</span>
-          <span className="font-mono text-slate-700">{d.item}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Qty</span>
-          <span className="tabular-nums text-slate-700">
-            {d.wabtec.totalQuantity.toLocaleString()}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Buyer</span>
-          <span className="text-slate-700 truncate ml-2">{d.wabtec.buyerName || '—'}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Created</span>
-          <span className="text-slate-700">{d.wabtec.creationDate || '—'}</span>
-        </div>
-      </div>
-    </div>
   )
 }
 

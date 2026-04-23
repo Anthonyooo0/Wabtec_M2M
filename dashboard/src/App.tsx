@@ -6,6 +6,7 @@ import { Toast } from './components/Toast'
 import { Dashboard } from './views/Dashboard'
 import { Comparison } from './views/Comparison'
 import { Discrepancies } from './views/Discrepancies'
+import { PoAwaitingAcceptance } from './views/PoAwaitingAcceptance'
 import { PoHistory } from './views/PoHistory'
 import { loadWabtecPOs, type WabtecPO } from './services/wabtecData'
 import { loadM2MPOs, diff, isDiscrepancy, type M2MPO, type Discrepancy } from './services/m2mData'
@@ -103,9 +104,11 @@ const App: React.FC = () => {
         ? 'Wabtec vs M2M Comparison'
         : currentView === 'discrepancies'
           ? 'Discrepancies'
-          : currentView === 'po-history'
-            ? 'PO History'
-            : 'Audit Log'
+          : currentView === 'awaiting-acceptance'
+            ? 'POs Awaiting Acceptance'
+            : currentView === 'po-history'
+              ? 'PO History'
+              : 'Audit Log'
 
   return (
     <div className="flex h-screen overflow-hidden bg-mac-light">
@@ -151,6 +154,9 @@ const App: React.FC = () => {
               error={error}
               acceptedDateByPo={acceptedDateByPo}
             />
+          )}
+          {currentView === 'awaiting-acceptance' && (
+            <PoAwaitingAcceptance items={discrepancies} loading={loading} error={error} />
           )}
           {currentView === 'po-history' && <PoHistory />}
           {currentView === 'changelog' && (

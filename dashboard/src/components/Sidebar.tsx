@@ -6,6 +6,7 @@ import {
   AlertIcon,
   HistoryIcon,
   SearchIcon,
+  HourglassIcon,
   LogoutIcon,
   ChevronLeftIcon,
 } from './Icons'
@@ -23,6 +24,7 @@ const navItems: { id: ViewMode; label: string; Icon: React.FC<{ className?: stri
   { id: 'dashboard', label: 'Dashboard', Icon: DashboardIcon },
   { id: 'comparison', label: 'Wabtec vs M2M', Icon: CompareIcon },
   { id: 'discrepancies', label: 'Discrepancies', Icon: AlertIcon },
+  { id: 'awaiting-acceptance', label: 'PO Awaiting Acceptance', Icon: HourglassIcon },
   { id: 'po-history', label: 'PO History', Icon: SearchIcon },
   { id: 'changelog', label: 'Audit Log', Icon: HistoryIcon },
 ]

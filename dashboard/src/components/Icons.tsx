@@ -32,6 +32,12 @@ export const SearchIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 )
 
+export const HourglassIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className || common} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 3h12M6 21h12M6 3v3a6 6 0 006 6 6 6 0 006-6V3M6 21v-3a6 6 0 016-6 6 6 0 016 6v3" />
+  </svg>
+)
+
 export const LogoutIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg className={className || common} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
