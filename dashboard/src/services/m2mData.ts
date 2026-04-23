@@ -211,15 +211,28 @@ export function diff(
   m2m: M2MPO[],
   acceptedDateByPo: Map<string, Date> = new Map(),
 ): Discrepancy[] {
+  // Two-tier match — exact (PO, line) first, then PO-only fallback for
+  // cases where Wabtec and M2M disagree on line numbering. Mirrors the
+  // Comparison view's alignment so the "missing_in_m2m" count matches what
+  // the user sees there.
   const byKey = new Map<string, M2MPO>()
+  const byPo = new Map<string, M2MPO[]>()
   for (const row of m2m) {
     byKey.set(makeKey(row.wabtecPo, row.lineNo), row)
+    const po = (row.wabtecPo || '').trim()
+    if (!byPo.has(po)) byPo.set(po, [])
+    byPo.get(po)!.push(row)
+  }
+  const pickBestForPo = (po: string): M2MPO | null => {
+    const rows = byPo.get(po.trim())
+    if (!rows || rows.length === 0) return null
+    return rows.find((r) => r.isActive) || rows[0]
   }
 
   const discrepancies: Discrepancy[] = []
 
   for (const w of wabtec) {
-    const m = byKey.get(makeKey(w.poNumber, w.poLineNumber)) || null
+    const m = byKey.get(makeKey(w.poNumber, w.poLineNumber)) || pickBestForPo(w.poNumber)
 
     const sccCancelled = /cancel/i.test(w.action)
     const sccActive = !sccCancelled && !/closed/i.test(w.action)

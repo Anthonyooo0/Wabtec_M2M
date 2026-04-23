@@ -47,13 +47,35 @@ export const Comparison: React.FC<ComparisonProps> = ({
   }
 
   const aligned: AlignedRow[] = useMemo(() => {
+    // Two-tier match. Exact (PO + line) is the confident path; if that misses
+    // but the PO exists in M2M under any line, take the best-available row
+    // (prefer open/active, else first). Catches cases where Wabtec and M2M
+    // disagree on line numbering for the same order — e.g. PO 210439980 is
+    // CSV line 1 but lives on M2M line 2. Without this fallback the row
+    // shows "Not found in M2M" even though the PO is right there.
     const byKey = new Map<string, M2MPO>()
-    for (const row of m2m) byKey.set(keyFor(row.wabtecPo, row.lineNo), row)
+    const byPo = new Map<string, M2MPO[]>()
+    for (const row of m2m) {
+      byKey.set(keyFor(row.wabtecPo, row.lineNo), row)
+      const po = (row.wabtecPo || '').trim()
+      if (!byPo.has(po)) byPo.set(po, [])
+      byPo.get(po)!.push(row)
+    }
 
-    return wabtec.map((w) => ({
-      wabtec: w,
-      m2m: byKey.get(keyFor(w.poNumber, w.poLineNumber)) || null,
-    }))
+    const pickBest = (rows: M2MPO[]): M2MPO => {
+      const active = rows.find((r) => r.isActive)
+      return active || rows[0]
+    }
+
+    return wabtec.map((w) => {
+      const exact = byKey.get(keyFor(w.poNumber, w.poLineNumber))
+      if (exact) return { wabtec: w, m2m: exact }
+      const poRows = byPo.get(w.poNumber.trim())
+      if (poRows && poRows.length > 0) {
+        return { wabtec: w, m2m: pickBest(poRows) }
+      }
+      return { wabtec: w, m2m: null }
+    })
   }, [wabtec, m2m])
 
   // Orphan M2M rows — exist in M2M but not in current SCC export. Usually
