@@ -151,9 +151,9 @@ export const PoCollaborationDrawer: React.FC = () => {
                   </svg>
                 </button>
                 {pickerOpen && (
-                  <div className="absolute bottom-full right-0 mb-2 w-44 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+                  <div className="absolute bottom-full right-0 mb-2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
                     <PickerItem
-                      icon="📧"
+                      icon={<EnvelopeIcon />}
                       label="Outlook email"
                       onClick={() => {
                         setPickerOpen(false)
@@ -161,7 +161,7 @@ export const PoCollaborationDrawer: React.FC = () => {
                       }}
                     />
                     <PickerItem
-                      icon="🖼"
+                      icon={<ImageIcon />}
                       label="Image / screenshot"
                       onClick={() => {
                         setPickerOpen(false)
@@ -169,7 +169,7 @@ export const PoCollaborationDrawer: React.FC = () => {
                       }}
                     />
                     <PickerItem
-                      icon="💬"
+                      icon={<ChatIcon />}
                       label="Teams chat"
                       onClick={() => {
                         setPickerOpen(false)
@@ -246,18 +246,36 @@ export const PoCollaborationDrawer: React.FC = () => {
   )
 }
 
-const PickerItem: React.FC<{ icon: string; label: string; onClick: () => void }> = ({
-  icon,
-  label,
-  onClick,
-}) => (
+const PickerItem: React.FC<{
+  icon: React.ReactNode
+  label: string
+  onClick: () => void
+}> = ({ icon, label, onClick }) => (
   <button
     onClick={onClick}
     className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"
   >
-    <span className="text-base">{icon}</span>
+    <span className="text-slate-500 flex-shrink-0">{icon}</span>
     <span>{label}</span>
   </button>
+)
+
+const EnvelopeIcon: React.FC = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+  </svg>
+)
+
+const ImageIcon: React.FC = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M4 6h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z" />
+  </svg>
+)
+
+const ChatIcon: React.FC = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+  </svg>
 )
 
 const TimelineEntryCard: React.FC<{ entry: TimelineEntry; onRemove: () => void }> = ({
@@ -291,7 +309,10 @@ const TimelineEntryCard: React.FC<{ entry: TimelineEntry; onRemove: () => void }
 
       {entry.kind === 'email' && entry.email && (
         <div className="border border-slate-200 rounded-lg p-2 bg-slate-50">
-          <div className="text-xs font-bold text-slate-700 truncate">📧 {entry.email.subject}</div>
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+            <EnvelopeIcon />
+            <span className="truncate">{entry.email.subject}</span>
+          </div>
           <div className="text-[11px] text-slate-600 mt-0.5 truncate">
             {entry.email.fromName ? `${entry.email.fromName} · ` : ''}
             {entry.email.fromAddress}
@@ -322,7 +343,10 @@ const TimelineEntryCard: React.FC<{ entry: TimelineEntry; onRemove: () => void }
           rel="noreferrer"
           className="block border border-slate-200 rounded-lg p-2 bg-slate-50 hover:bg-slate-100 transition-colors"
         >
-          <div className="text-xs font-bold text-slate-700 truncate">💬 {entry.teams.topic}</div>
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+            <ChatIcon />
+            <span className="truncate">{entry.teams.topic}</span>
+          </div>
           {entry.teams.participants.length > 0 && (
             <div className="text-[11px] text-slate-600 mt-0.5 truncate">
               {entry.teams.participants.slice(0, 4).join(' · ')}
