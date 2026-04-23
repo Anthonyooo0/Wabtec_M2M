@@ -11,6 +11,8 @@ import { PoHistory } from './views/PoHistory'
 import { loadWabtecPOs, type WabtecPO } from './services/wabtecData'
 import { loadM2MPOs, diff, isDiscrepancy, type M2MPO, type Discrepancy } from './services/m2mData'
 import { loadPoHistory, buildAcceptedDateIndex } from './services/poHistoryData'
+import { PoCollaborationProvider } from './contexts/PoCollaborationContext'
+import { PoCollaborationDrawer } from './components/PoCollaborationDrawer'
 import type { DashboardStats, ViewMode } from './types'
 
 const VERSION = 'V0.1.0'
@@ -111,6 +113,7 @@ const App: React.FC = () => {
               : 'Audit Log'
 
   return (
+    <PoCollaborationProvider>
     <div className="flex h-screen overflow-hidden bg-mac-light">
       <Sidebar
         currentUser={currentUser}
@@ -169,7 +172,9 @@ const App: React.FC = () => {
       </main>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <PoCollaborationDrawer />
     </div>
+    </PoCollaborationProvider>
   )
 }
 

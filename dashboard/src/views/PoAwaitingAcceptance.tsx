@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { daysSinceCreation, type Discrepancy } from '../services/m2mData'
+import { PoLink } from '../components/PoLink'
 
 // Color the day-counter to escalate as a PO sits longer in SCC unaccepted.
 // Same thresholds the Discrepancies "missing in M2M" card uses, so the
@@ -219,7 +220,9 @@ const AwaitingCard: React.FC<{ d: Discrepancy }> = ({ d }) => {
   return (
     <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
-        <span className="font-mono text-xs font-bold text-slate-700">PO {d.wabtecPo}</span>
+        <span className="font-mono text-xs font-bold text-slate-700">
+          PO <PoLink poNumber={d.wabtecPo} />
+        </span>
         <span className="text-slate-400 text-xs">Line {d.lineNo}</span>
       </div>
       <div className="mb-3 flex items-center justify-between gap-2">

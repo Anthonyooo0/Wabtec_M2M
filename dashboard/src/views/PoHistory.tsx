@@ -1,16 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { useMsal } from '@azure/msal-react'
 import {
   loadPoHistory,
   type PoHistoryEntry,
   type PoHistoryRow,
 } from '../services/poHistoryData'
-import {
-  detachEmail,
-  getAttachedEmails,
-  type AttachedEmail,
-} from '../services/emailAttachments'
-import { AttachEmailModal } from '../components/AttachEmailModal'
+import { PoLink } from '../components/PoLink'
 
 // Columns to surface prominently (in this order). We keep a stable, curated
 // column order rather than echoing the scraper's raw column array — the raw
@@ -32,17 +26,11 @@ const PRIMARY_COLUMNS: { key: string; label: string; numeric?: boolean }[] = [
 ]
 
 export const PoHistory: React.FC = () => {
-  const { accounts } = useMsal()
-  const currentUser = accounts[0]?.username || 'unknown'
-
   const [entries, setEntries] = useState<PoHistoryEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
-  const [attachOpen, setAttachOpen] = useState(false)
-  // Bump this when an email gets attached/detached to re-read localStorage.
-  const [attachmentsVersion, setAttachmentsVersion] = useState(0)
 
   useEffect(() => {
     loadPoHistory()
@@ -63,14 +51,6 @@ export const PoHistory: React.FC = () => {
     if (!selected) return null
     return entries.find((e) => e.poNumber === selected) || null
   }, [entries, selected])
-
-  const attachments: AttachedEmail[] = useMemo(() => {
-    if (!selected) return []
-    return getAttachedEmails(selected)
-    // attachmentsVersion is deliberately a dep so this recomputes after a
-    // mutation without us having to lift email state into useState.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, attachmentsVersion])
 
   // Sort history rows newest-first by Updated time if parseable. Falls back
   // to the scraper's original DOM order when the date can't be parsed.
@@ -120,7 +100,9 @@ export const PoHistory: React.FC = () => {
                 onClick={() => setSelected(e.poNumber)}
                 className="w-full text-left px-4 py-2.5 hover:bg-slate-50 transition-colors flex items-center justify-between"
               >
-                <span className="font-mono text-sm font-medium text-slate-800">{e.poNumber}</span>
+                <span className="font-mono text-sm font-medium text-slate-800">
+                  {e.poNumber}
+                </span>
                 <span className="text-[10px] font-mono text-slate-500 uppercase">
                   {e.historyRowCount} {e.historyRowCount === 1 ? 'revision' : 'revisions'}
                 </span>
@@ -156,7 +138,7 @@ export const PoHistory: React.FC = () => {
                   Selected PO
                 </div>
                 <div className="text-xl font-bold font-mono text-slate-800 mt-0.5">
-                  {activeEntry.poNumber}
+                  <PoLink poNumber={activeEntry.poNumber} chip />
                 </div>
                 <div className="text-xs text-slate-500 mt-1">
                   {activeEntry.historyRowCount}{' '}
@@ -164,60 +146,13 @@ export const PoHistory: React.FC = () => {
                   {new Date(activeEntry.scrapedAt).toLocaleString()}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setAttachOpen(true)}
-                  className="px-4 py-2 text-sm font-bold text-white bg-mac-accent hover:bg-mac-blue rounded-lg shadow-sm transition-colors flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                  </svg>
-                  Attach Email
-                </button>
-                <button
-                  onClick={() => setSelected(null)}
-                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
-                >
-                  Back to search
-                </button>
-              </div>
+              <button
+                onClick={() => setSelected(null)}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
+              >
+                Back to search
+              </button>
             </div>
-
-            {attachments.length > 0 && (
-              <div className="px-5 py-4 border-b border-slate-200 bg-slate-50/40">
-                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  Attached Emails ({attachments.length})
-                </div>
-                <div className="space-y-2">
-                  {attachments.map((a) => (
-                    <div
-                      key={a.conversationId}
-                      className="bg-white border border-slate-200 rounded-lg p-3 flex items-start justify-between gap-3"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="font-bold text-sm text-slate-800 truncate">{a.subject}</div>
-                        <div className="text-xs text-slate-600 mt-0.5 truncate">
-                          {a.fromName ? `${a.fromName} · ` : ''}{a.fromAddress}
-                        </div>
-                        <div className="text-xs text-slate-500 mt-1 line-clamp-2">{a.bodyPreview}</div>
-                        <div className="text-[10px] text-slate-400 font-mono mt-1">
-                          attached {new Date(a.attachedAt).toLocaleString()} by {a.attachedBy}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          detachEmail(selected!, a.conversationId)
-                          setAttachmentsVersion((v) => v + 1)
-                        }}
-                        className="text-xs font-medium text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -265,14 +200,6 @@ export const PoHistory: React.FC = () => {
         </div>
       )}
 
-      {attachOpen && selected && (
-        <AttachEmailModal
-          poNumber={selected}
-          currentUser={currentUser}
-          onClose={() => setAttachOpen(false)}
-          onAttached={() => setAttachmentsVersion((v) => v + 1)}
-        />
-      )}
     </div>
   )
 }

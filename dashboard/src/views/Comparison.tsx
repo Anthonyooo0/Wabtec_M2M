@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { formatShipTo, type WabtecPO } from '../services/wabtecData'
+import { PoLink } from '../components/PoLink'
 import { isDiscrepancy, type Discrepancy, type M2MPO } from '../services/m2mData'
 import { SCCStatusBadge, M2MStateBadge, fmtIsoDate } from '../components/StatusBadges'
 
@@ -386,7 +387,7 @@ const WabtecTable: React.FC<{ rows: AlignedRow[] }> = ({ rows }) => (
         <tbody className="divide-y divide-slate-100">
           {rows.map(({ wabtec: r }, idx) => (
             <tr key={`${r.poNumber}-${r.poLineNumber}-${idx}`} className="hover:bg-slate-50">
-              <Td mono>{r.poNumber}</Td>
+              <Td mono><PoLink poNumber={r.poNumber} /></Td>
               <Td>{r.poLineNumber}</Td>
               <Td mono>{r.itemNumber}</Td>
               <Td className="max-w-[220px] truncate">{r.itemDescription}</Td>
@@ -455,7 +456,7 @@ const M2MTable: React.FC<{ rows: AlignedRow[] }> = ({ rows }) => (
             if (!m) {
               return (
                 <tr key={`${w.poNumber}-${w.poLineNumber}-${idx}`} className="bg-red-50/40">
-                  <Td mono>{w.poNumber}</Td>
+                  <Td mono><PoLink poNumber={w.poNumber} /></Td>
                   <Td className="text-red-500 italic text-xs" colSpan={11}>
                     Not found in M2M
                   </Td>
@@ -464,7 +465,7 @@ const M2MTable: React.FC<{ rows: AlignedRow[] }> = ({ rows }) => (
             }
             return (
               <tr key={`${m.wabtecPo}-${m.lineNo}-${idx}`} className="hover:bg-slate-50">
-                <Td mono>{m.wabtecPo}</Td>
+                <Td mono><PoLink poNumber={m.wabtecPo} /></Td>
                 <Td mono>{m.macSo}</Td>
                 <Td>{m.lineNo}</Td>
                 <Td mono>{m.item}</Td>

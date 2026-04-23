@@ -19,4 +19,8 @@ export const loginRequest = { scopes: [] };
 // scary consent screen — MSAL prompts for it on first use of the picker.
 export const graphMailReadRequest = { scopes: ["Mail.Read"] };
 
+// Same incremental pattern for Teams chat picker — covers 1:1 + group chats
+// (not channel posts; that needs ChannelMessage.Read.All which is broader).
+export const graphChatReadRequest = { scopes: ["Chat.Read"] };
+
 export const ALLOWED_DOMAINS = ["macproducts.net", "macimpulse.net"];

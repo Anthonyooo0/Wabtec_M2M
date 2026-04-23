@@ -9,6 +9,7 @@ import {
 } from '../services/m2mData'
 import type { WabtecPO } from '../services/wabtecData'
 import { SCCStatusBadge, M2MStateBadge, fmtIsoDate } from '../components/StatusBadges'
+import { PoLink } from '../components/PoLink'
 
 interface DiscrepanciesProps {
   items: Discrepancy[]
@@ -185,7 +186,7 @@ const PendingIntakeCard: React.FC<{
     <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
         <span className="font-mono text-xs font-bold text-slate-700">
-          PO {d.wabtecPo}
+          PO <PoLink poNumber={d.wabtecPo} />
         </span>
         <span className="text-slate-400 text-xs">Line {d.lineNo}</span>
       </div>
@@ -587,7 +588,7 @@ const CardHeader: React.FC<{ d: Discrepancy }> = ({ d }) => (
     <div className="flex items-center gap-3 min-w-0">
       <SeverityPill kind={d.kind} />
       <span className="font-mono text-sm font-bold text-slate-700">
-        PO {d.wabtecPo}
+        PO <PoLink poNumber={d.wabtecPo} />
       </span>
       <span className="text-slate-300">·</span>
       <span className="text-sm text-slate-600">Line {d.lineNo}</span>
