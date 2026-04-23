@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import {
-  daysSinceCreation,
+  daysUnbooked,
+  fmtShortDate,
   PENDING_INTAKE_DAYS,
   type Discrepancy,
   type DiscrepancyKind,
@@ -13,6 +14,7 @@ interface DiscrepanciesProps {
   items: Discrepancy[]
   loading: boolean
   error: string | null
+  acceptedDateByPo?: Map<string, Date>
 }
 
 type Severity = 'critical' | 'medium' | 'value'
@@ -24,7 +26,12 @@ const severityOf = (kind: DiscrepancyKind): Severity => {
   return 'value'
 }
 
-export const Discrepancies: React.FC<DiscrepanciesProps> = ({ items, loading, error }) => {
+export const Discrepancies: React.FC<DiscrepanciesProps> = ({
+  items,
+  loading,
+  error,
+  acceptedDateByPo = new Map(),
+}) => {
   const pendingIntake = useMemo(
     () => items.filter((d) => d.kind === 'pending_intake'),
     [items],
@@ -70,7 +77,7 @@ export const Discrepancies: React.FC<DiscrepanciesProps> = ({ items, loading, er
   if (realDiscrepancyCount === 0 && pendingIntake.length > 0) {
     return (
       <div className="view-transition space-y-8">
-        <PendingIntakeSection items={pendingIntake} />
+        <PendingIntakeSection items={pendingIntake} acceptedDateByPo={acceptedDateByPo} />
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
           <h3 className="font-bold text-slate-700 text-lg">No discrepancies</h3>
           <p className="mt-2 text-slate-500 text-sm max-w-md mx-auto">
@@ -84,30 +91,38 @@ export const Discrepancies: React.FC<DiscrepanciesProps> = ({ items, loading, er
 
   return (
     <div className="view-transition space-y-8">
-      {pendingIntake.length > 0 && <PendingIntakeSection items={pendingIntake} />}
+      {pendingIntake.length > 0 && (
+        <PendingIntakeSection items={pendingIntake} acceptedDateByPo={acceptedDateByPo} />
+      )}
       <SeveritySection
         title="Critical"
         accent="bg-red-500"
         items={grouped.critical}
         blurb="Status conflicts — order is live on one side, dead on the other"
+        acceptedDateByPo={acceptedDateByPo}
       />
       <SeveritySection
         title="Medium"
         accent="bg-orange-500"
         items={grouped.medium}
         blurb="Orphans and out-of-sync state — not immediate risk, but fix soon"
+        acceptedDateByPo={acceptedDateByPo}
       />
       <SeveritySection
         title="Value"
         accent="bg-blue-500"
         items={grouped.value}
         blurb="Quantity and pricing drift between SCC and M2M"
+        acceptedDateByPo={acceptedDateByPo}
       />
     </div>
   )
 }
 
-const PendingIntakeSection: React.FC<{ items: Discrepancy[] }> = ({ items }) => {
+const PendingIntakeSection: React.FC<{
+  items: Discrepancy[]
+  acceptedDateByPo: Map<string, Date>
+}> = ({ items, acceptedDateByPo }) => {
   const [open, setOpen] = useState(true)
   if (items.length === 0) return null
 
@@ -145,7 +160,11 @@ const PendingIntakeSection: React.FC<{ items: Discrepancy[] }> = ({ items }) => 
       {open && (
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {items.map((d, i) => (
-            <PendingIntakeCard key={`${d.wabtecPo}-${d.lineNo}-${i}`} d={d} />
+            <PendingIntakeCard
+              key={`${d.wabtecPo}-${d.lineNo}-${i}`}
+              d={d}
+              acceptedDateByPo={acceptedDateByPo}
+            />
           ))}
         </div>
       )}
@@ -153,8 +172,12 @@ const PendingIntakeSection: React.FC<{ items: Discrepancy[] }> = ({ items }) => 
   )
 }
 
-const PendingIntakeCard: React.FC<{ d: Discrepancy }> = ({ d }) => {
-  const days = daysSinceCreation(d.wabtec.creationDate)
+const PendingIntakeCard: React.FC<{
+  d: Discrepancy
+  acceptedDateByPo: Map<string, Date>
+}> = ({ d, acceptedDateByPo }) => {
+  const unbooked = daysUnbooked(d.wabtec.poNumber, d.wabtec.creationDate, acceptedDateByPo)
+  const days = unbooked.days
   return (
     <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -164,13 +187,19 @@ const PendingIntakeCard: React.FC<{ d: Discrepancy }> = ({ d }) => {
         <span className="text-slate-400 text-xs">Line {d.lineNo}</span>
       </div>
 
-      <div className="flex items-end gap-2 mb-3">
+      <div className="flex items-end gap-2 mb-1">
         <span className="text-3xl font-bold text-slate-600 tabular-nums leading-none">
           {days ?? '—'}
         </span>
         <span className="text-xs text-slate-500 mb-1">
-          day{days === 1 ? '' : 's'} old
+          day{days === 1 ? '' : 's'} since{' '}
+          {unbooked.source === 'accepted' ? 'accepted' : 'created'}
         </span>
+      </div>
+      <div className="text-[10px] text-slate-400 font-mono mb-3">
+        {unbooked.source === 'accepted' && unbooked.date
+          ? `accepted ${fmtShortDate(unbooked.date)}`
+          : `created ${d.wabtec.creationDate || '—'}`}
       </div>
 
       <div className="text-xs text-slate-500 space-y-1">
@@ -198,7 +227,8 @@ const SeveritySection: React.FC<{
   accent: string
   blurb: string
   items: Discrepancy[]
-}> = ({ title, accent, blurb, items }) => {
+  acceptedDateByPo: Map<string, Date>
+}> = ({ title, accent, blurb, items, acceptedDateByPo }) => {
   const [open, setOpen] = useState(true)
   if (items.length === 0) return null
 
@@ -233,7 +263,11 @@ const SeveritySection: React.FC<{
       {open && (
         <div className="space-y-4">
           {items.map((d, i) => (
-            <DiscrepancyCard key={`${d.wabtecPo}-${d.lineNo}-${d.kind}-${i}`} d={d} />
+            <DiscrepancyCard
+              key={`${d.wabtecPo}-${d.lineNo}-${d.kind}-${i}`}
+              d={d}
+              acceptedDateByPo={acceptedDateByPo}
+            />
           ))}
         </div>
       )}
@@ -241,8 +275,12 @@ const SeveritySection: React.FC<{
   )
 }
 
-const DiscrepancyCard: React.FC<{ d: Discrepancy }> = ({ d }) => {
-  if (d.kind === 'missing_in_m2m') return <MissingInM2MCard d={d} />
+const DiscrepancyCard: React.FC<{
+  d: Discrepancy
+  acceptedDateByPo: Map<string, Date>
+}> = ({ d, acceptedDateByPo }) => {
+  if (d.kind === 'missing_in_m2m')
+    return <MissingInM2MCard d={d} acceptedDateByPo={acceptedDateByPo} />
   if (!d.m2m) return null
   if (d.kind === 'ship_to_mismatch') return <ShipToMismatchCard d={d} m={d.m2m} />
   if (d.kind === 'qty_mismatch') return <QtyMismatchCard d={d} m={d.m2m} />
@@ -300,8 +338,12 @@ const StatusConflictCard: React.FC<{ d: Discrepancy; m: M2MPO }> = ({ d, m }) =>
 // Card: Missing in M2M — with staleness days counter (recomputed on render)
 // -----------------------------------------------------------------------------
 
-const MissingInM2MCard: React.FC<{ d: Discrepancy }> = ({ d }) => {
-  const days = daysSinceCreation(d.wabtec.creationDate)
+const MissingInM2MCard: React.FC<{
+  d: Discrepancy
+  acceptedDateByPo: Map<string, Date>
+}> = ({ d, acceptedDateByPo }) => {
+  const unbooked = daysUnbooked(d.wabtec.poNumber, d.wabtec.creationDate, acceptedDateByPo)
+  const days = unbooked.days
   const staleness = stalenessClass(days)
 
   return (
@@ -332,12 +374,19 @@ const MissingInM2MCard: React.FC<{ d: Discrepancy }> = ({ d }) => {
                   day{days === 1 ? '' : 's'} unbooked
                 </div>
                 <div className="text-[11px] text-slate-500 mt-3">
-                  SCC created {d.wabtec.creationDate}
+                  {unbooked.source === 'accepted' && unbooked.date
+                    ? `SCC accepted ${fmtShortDate(unbooked.date)}`
+                    : `SCC created ${d.wabtec.creationDate || '—'}`}
                 </div>
+                {unbooked.source === 'created' && (
+                  <div className="text-[10px] text-slate-400 mt-0.5 italic">
+                    no accepted record in history — using creation date
+                  </div>
+                )}
               </>
             ) : (
               <div className="text-sm text-slate-400 italic">
-                No creation date in SCC — can't age this
+                No accepted or creation date — can't age this
               </div>
             )}
           </div>

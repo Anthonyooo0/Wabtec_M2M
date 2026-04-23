@@ -9,6 +9,7 @@ import { Discrepancies } from './views/Discrepancies'
 import { PoHistory } from './views/PoHistory'
 import { loadWabtecPOs, type WabtecPO } from './services/wabtecData'
 import { loadM2MPOs, diff, isDiscrepancy, type M2MPO, type Discrepancy } from './services/m2mData'
+import { loadPoHistory, buildAcceptedDateIndex } from './services/poHistoryData'
 import type { DashboardStats, ViewMode } from './types'
 
 const VERSION = 'V0.1.0'
@@ -24,6 +25,7 @@ const App: React.FC = () => {
   const [wabtec, setWabtec] = useState<WabtecPO[]>([])
   const [m2m, setM2m] = useState<M2MPO[]>([])
   const [discrepancies, setDiscrepancies] = useState<Discrepancy[]>([])
+  const [acceptedDateByPo, setAcceptedDateByPo] = useState<Map<string, Date>>(new Map())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastSync, setLastSync] = useState<string | null>(null)
@@ -45,17 +47,24 @@ const App: React.FC = () => {
     setLoading(true)
     setError(null)
     try {
-      // Load SCC first so we know which POs to ask M2M about — way faster
-      // and more accurate than scanning M2M blindly.
-      const w = await loadWabtecPOs()
+      // Load SCC CSV and scraped PO history in parallel. History is a
+      // non-fatal enrichment — failing to load it falls back to creation
+      // date for the unbooked-days calculation.
+      const [w, acceptedIdx] = await Promise.all([
+        loadWabtecPOs(),
+        loadPoHistory()
+          .then(buildAcceptedDateIndex)
+          .catch(() => new Map<string, Date>()),
+      ])
       setWabtec(w)
+      setAcceptedDateByPo(acceptedIdx)
 
       const uniquePos = [...new Set(w.map((row) => row.poNumber.trim()).filter(Boolean))]
       const m = await loadM2MPOs(uniquePos).catch((e) => {
         throw new Error(`M2M: ${e.message}`)
       })
       setM2m(m)
-      setDiscrepancies(diff(w, m))
+      setDiscrepancies(diff(w, m, acceptedIdx))
       setLastSync(new Date().toLocaleString())
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
@@ -136,7 +145,12 @@ const App: React.FC = () => {
             />
           )}
           {currentView === 'discrepancies' && (
-            <Discrepancies items={discrepancies} loading={loading} error={error} />
+            <Discrepancies
+              items={discrepancies}
+              loading={loading}
+              error={error}
+              acceptedDateByPo={acceptedDateByPo}
+            />
           )}
           {currentView === 'po-history' && <PoHistory />}
           {currentView === 'changelog' && (

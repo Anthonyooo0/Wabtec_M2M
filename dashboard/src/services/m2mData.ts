@@ -99,6 +99,39 @@ export const daysSinceCreation = (mmddyyyy: string): number | null => {
   return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
 }
 
+// Days between a given Date and today. Used for "unbooked days" based on
+// the latest SCC acceptance date (from the History tab).
+export const daysSince = (d: Date | null): number | null => {
+  if (!d) return null
+  const diffMs = Date.now() - d.getTime()
+  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)))
+}
+
+// MM-DD-YYYY for display — matches the style the SCC CSV uses elsewhere.
+export const fmtShortDate = (d: Date): string => {
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${mm}-${dd}-${d.getFullYear()}`
+}
+
+// Preferred benchmark for "unbooked" age: the PO's latest SCC acceptance
+// date (from the scraped History). Falls back to creation date if there's
+// no accepted event in history (e.g. brand-new PO not scraped yet, or a PO
+// never accepted). Returns days + the source used so callers can label.
+export const daysUnbooked = (
+  poNumber: string,
+  creationDate: string,
+  acceptedDateByPo: Map<string, Date>,
+): { days: number | null; source: 'accepted' | 'created'; date: Date | null } => {
+  const accepted = acceptedDateByPo.get((poNumber || '').trim())
+  if (accepted) return { days: daysSince(accepted), source: 'accepted', date: accepted }
+  const m = (creationDate || '').match(/^(\d{2})-(\d{2})-(\d{4})$/)
+  if (!m) return { days: null, source: 'created', date: null }
+  const created = new Date(`${m[3]}-${m[1]}-${m[2]}T00:00:00`)
+  if (Number.isNaN(created.getTime())) return { days: null, source: 'created', date: null }
+  return { days: daysSince(created), source: 'created', date: created }
+}
+
 // Ship-to match — both sides now carry real addresses (scraped from the SCC
 // detail page on the Wabtec side, SYADDR on the M2M side). Direct city+state
 // comparison; zip is a tiebreaker for same-city/different-facility cases.
@@ -152,7 +185,16 @@ const makeKey = (po: string, line: string): string => {
 // If SCC shows a PO as Cancelled but M2M still has it ACTIVE
 // (FCANC_DT null AND FCLOS_DT null), flag as a critical discrepancy.
 // Also surfaces the inverse and a few secondary checks.
-export function diff(wabtec: WabtecPO[], m2m: M2MPO[]): Discrepancy[] {
+//
+// `acceptedDateByPo` — map from the scraped PO history giving each PO's
+// latest "SCC Status → ACCEPTED" date. Used to age unbooked POs; the
+// previous version used creationDate which over-counted POs that sat in
+// NEW/REVISED for weeks before acceptance.
+export function diff(
+  wabtec: WabtecPO[],
+  m2m: M2MPO[],
+  acceptedDateByPo: Map<string, Date> = new Map(),
+): Discrepancy[] {
   const byKey = new Map<string, M2MPO>()
   for (const row of m2m) {
     byKey.set(makeKey(row.wabtecPo, row.lineNo), row)
@@ -169,16 +211,20 @@ export function diff(wabtec: WabtecPO[], m2m: M2MPO[]): Discrepancy[] {
     if (!m) {
       // Only surface if SCC says the row is still meaningful (not a stale cancelled ghost).
       if (sccActive) {
-        const days = daysSinceCreation(w.creationDate)
+        const { days, source, date } = daysUnbooked(w.poNumber, w.creationDate, acceptedDateByPo)
         const isRecent = days !== null && days < PENDING_INTAKE_DAYS
+        const sourceLabel =
+          source === 'accepted'
+            ? `accepted ${date ? fmtShortDate(date) : ''}`.trim()
+            : `created ${w.creationDate || ''}`.trim()
         discrepancies.push({
           kind: isRecent ? 'pending_intake' : 'missing_in_m2m',
           wabtecPo: w.poNumber,
           lineNo: w.poLineNumber,
           item: w.itemNumber,
           summary: isRecent
-            ? `Booked in SCC ${days} day${days === 1 ? '' : 's'} ago — give the sales rep a moment to accept.`
-            : 'SCC shows this PO active but no matching line in M2M.',
+            ? `Accepted on SCC ${days} day${days === 1 ? '' : 's'} ago — give the sales rep a moment to book it.`
+            : `SCC ${sourceLabel}, no matching line in M2M.`,
           wabtec: w,
           m2m: null,
         })
