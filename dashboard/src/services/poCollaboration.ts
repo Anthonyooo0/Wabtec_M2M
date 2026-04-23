@@ -37,6 +37,22 @@ export interface AttachedTeamsChat {
   lastDate: string
   bodyPreview?: string
   webUrl?: string
+  // Optional — set when the user picks a specific message inside the chat
+  // (vs. the chat as a whole). When present, renderers should show this
+  // message's content + sender instead of the chat-level preview.
+  messageId?: string
+  messageFromName?: string
+  messageDate?: string
+  messageBody?: string
+}
+
+export interface GraphChatMessage {
+  id: string
+  createdDateTime: string
+  from?: { user?: { displayName?: string; id?: string }; application?: { displayName?: string } | null } | null
+  body?: { content?: string; contentType?: string }
+  importance?: string
+  messageType?: string
 }
 
 export interface TimelineEntry {
@@ -274,4 +290,37 @@ export async function listGraphChats(
     const db = b.lastDate ? new Date(b.lastDate).getTime() : 0
     return db - da
   })
+}
+
+// Fetch the most recent N messages from a single chat. Used by the Teams
+// picker's second step so the user can attach a specific message rather
+// than the whole chat. Pulls 50 messages by default — enough scrollback
+// for the typical "where did we discuss this PO" case without paginating.
+export async function listChatMessages(
+  instance: IPublicClientApplication,
+  account: AccountInfo,
+  chatId: string,
+  top = 50,
+): Promise<GraphChatMessage[]> {
+  const token = await acquireChatToken(instance, account)
+  const url = new URL(`https://graph.microsoft.com/v1.0/me/chats/${chatId}/messages`)
+  url.searchParams.set('$top', String(top))
+  // Graph DOES support $orderby on chat messages (unlike /me/chats).
+
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Graph chat messages fetch failed: ${res.status} ${text}`)
+  }
+  const data = (await res.json()) as { value: GraphChatMessage[] }
+  // Filter out system/control messages (event types like member added/etc.)
+  // and sort newest-first to match the picker's expected display order.
+  return (data.value || [])
+    .filter((m) => m.messageType === 'message')
+    .sort(
+      (a, b) =>
+        new Date(b.createdDateTime).getTime() - new Date(a.createdDateTime).getTime(),
+    )
 }

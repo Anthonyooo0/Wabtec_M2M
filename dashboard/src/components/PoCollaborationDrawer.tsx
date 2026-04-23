@@ -421,8 +421,24 @@ const TimelineEntryCard: React.FC<{ entry: TimelineEntry; onRemove: () => void }
               {entry.teams.participants.slice(0, 4).join(' · ')}
             </div>
           )}
-          {entry.teams.bodyPreview && (
-            <div className="text-[11px] text-slate-500 mt-1 line-clamp-2">{entry.teams.bodyPreview}</div>
+          {entry.teams.messageId ? (
+            <div className="mt-2 border-l-2 border-mac-accent pl-2">
+              <div className="text-[11px] font-bold text-slate-700">
+                {entry.teams.messageFromName || 'Unknown'}
+                {entry.teams.messageDate && (
+                  <span className="ml-2 text-slate-400 font-mono font-normal">
+                    {new Date(entry.teams.messageDate).toLocaleString()}
+                  </span>
+                )}
+              </div>
+              <div className="text-[12px] text-slate-700 mt-0.5 whitespace-pre-wrap">
+                {entry.teams.messageBody || '(empty message)'}
+              </div>
+            </div>
+          ) : (
+            entry.teams.bodyPreview && (
+              <div className="text-[11px] text-slate-500 mt-1 line-clamp-2">{entry.teams.bodyPreview}</div>
+            )
           )}
           {entry.teams.webUrl && (
             <div className="text-[10px] text-mac-accent mt-1 font-medium">Open in Teams →</div>
