@@ -1,0 +1,24 @@
+{
+  "name": "mac-wabtec-scc-scraper",
+  "version": "0.1.0",
+  "description": "Automated data extraction from Wabtec Supply Chain Connect (SCC) for MAC Products discrepancy comparison vs M2M",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "login": "tsx src/login.ts",
+    "login:headed": "HEADLESS=false tsx src/login.ts",
+    "scrape:po-details": "tsx src/scrape-po-details.ts",
+    "inspect:po-details": "tsx src/inspect-po-details.ts",
+    "install:browsers": "playwright install chromium"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.48.0",
+    "dotenv": "^16.4.5",
+    "playwright": "^1.48.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
