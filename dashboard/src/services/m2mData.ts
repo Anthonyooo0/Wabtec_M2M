@@ -23,11 +23,17 @@ export interface M2MPO {
   shipToState: string
   shipToZip: string
   isActive: boolean
+  // 'poNumber' = exact-match primary (LTRIM(RTRIM(FCUSTPONO)) = <po>).
+  // 'substring' = fallback — PO appears as a substring in FCUSTPONO of a
+  // recent SO (prefix/suffix/embedded). Review before trusting.
+  matchedBy: 'poNumber' | 'substring'
 }
 
 interface M2MResponse {
   requestedPos: number
   count: number
+  primaryCount?: number
+  fallbackCount?: number
   elapsedMs: number
   generatedAt: string
   rows: M2MPO[]
@@ -36,10 +42,13 @@ interface M2MResponse {
 const API_BASE = (import.meta.env.VITE_M2M_API_BASE as string | undefined)?.replace(/\/$/, '')
 const FUNCTION_KEY = import.meta.env.VITE_M2M_FUNCTION_KEY as string | undefined
 
-// Targeted lookup: send the exact SCC PO list, get back only matching
-// M2M rows. Way cheaper than scanning history, and guarantees we don't
-// miss anything behind a row-limit cap.
-export async function loadM2MPOs(wabtecPos: string[]): Promise<M2MPO[]> {
+// Targeted lookup: send the exact SCC PO list, get back matching M2M rows.
+// `scanRecentLimit` controls the secondary substring-match pass on the last
+// N sales orders (default 50,000 server-side) — 0 disables the fallback.
+export async function loadM2MPOs(
+  wabtecPos: string[],
+  scanRecentLimit?: number,
+): Promise<M2MPO[]> {
   if (!API_BASE) {
     throw new Error('VITE_M2M_API_BASE not set — copy .env.example to .env and fill in values.')
   }
@@ -50,10 +59,17 @@ export async function loadM2MPOs(wabtecPos: string[]): Promise<M2MPO[]> {
   const url = new URL(`${API_BASE}/wabtec-po-compare`)
   if (FUNCTION_KEY) url.searchParams.set('code', FUNCTION_KEY)
 
+  const body: { wabtecPos: string[]; scanRecentLimit?: number } = {
+    wabtecPos: unique,
+  }
+  if (typeof scanRecentLimit === 'number') {
+    body.scanRecentLimit = scanRecentLimit
+  }
+
   const res = await fetch(url.toString(), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ wabtecPos: unique }),
+    body: JSON.stringify(body),
   })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
