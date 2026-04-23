@@ -13,4 +13,10 @@ export const msalConfig: Configuration = {
 };
 
 export const loginRequest = { scopes: [] };
+
+// Incrementally-requested Graph scope for the email-attachment feature. We
+// don't request this at login so users who never attach emails don't get a
+// scary consent screen — MSAL prompts for it on first use of the picker.
+export const graphMailReadRequest = { scopes: ["Mail.Read"] };
+
 export const ALLOWED_DOMAINS = ["macproducts.net", "macimpulse.net"];
