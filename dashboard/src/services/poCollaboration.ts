@@ -16,6 +16,9 @@ export interface AttachedEmailRef {
   fromAddress: string
   latestDate: string
   bodyPreview: string
+  bodyContent?: string
+  bodyContentType?: 'text' | 'html'
+  webLink?: string
 }
 
 export interface AttachedImage {
@@ -238,7 +241,8 @@ export async function listGraphChats(
   const url = new URL('https://graph.microsoft.com/v1.0/me/chats')
   url.searchParams.set('$expand', 'members,lastMessagePreview')
   url.searchParams.set('$top', '50')
-  url.searchParams.set('$orderby', 'lastUpdatedDateTime desc')
+  // No $orderby — Graph rejects ordering /me/chats by lastUpdatedDateTime
+  // (returns 400 BadRequest). We sort client-side after the fetch instead.
 
   const res = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${token}` },
@@ -248,7 +252,7 @@ export async function listGraphChats(
     throw new Error(`Graph chats fetch failed: ${res.status} ${text}`)
   }
   const data = (await res.json()) as { value: (GraphChat & { lastMessagePreview?: GraphChatLastMessagePreview })[] }
-  return (data.value || []).map((c) => {
+  const mapped = (data.value || []).map((c) => {
     const participants = (c.members || [])
       .map((m) => m.displayName || m.email || '')
       .filter(Boolean)
@@ -263,5 +267,11 @@ export async function listGraphChats(
       bodyPreview: preview ? preview.slice(0, 220) : undefined,
       webUrl: c.webUrl,
     }
+  })
+  // Sort newest-first by lastDate, since Graph won't sort for us.
+  return mapped.sort((a, b) => {
+    const da = a.lastDate ? new Date(a.lastDate).getTime() : 0
+    const db = b.lastDate ? new Date(b.lastDate).getTime() : 0
+    return db - da
   })
 }

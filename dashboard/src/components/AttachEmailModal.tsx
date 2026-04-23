@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useMsal } from '@azure/msal-react'
 import {
   attachEmail,
+  fetchGraphMessageBody,
   groupIntoThreads,
   searchGraphMessages,
   type EmailThread,
@@ -62,9 +63,24 @@ export const AttachEmailModal: React.FC<AttachEmailModalProps> = ({
     }
   }
 
-  const handleAttach = (thread: EmailThread) => {
+  const handleAttach = async (thread: EmailThread) => {
     setAttaching(thread.conversationId)
+    setError(null)
     try {
+      // Fetch the full body so the drawer can render the actual email,
+      // not just the 255-char preview Graph returns from /messages.
+      let bodyContent = ''
+      let bodyContentType: 'text' | 'html' = 'text'
+      let webLink: string | undefined
+      try {
+        const body = await fetchGraphMessageBody(instance, account!, thread.latestMessageId)
+        bodyContent = body.content
+        bodyContentType = body.contentType
+        webLink = body.webLink
+      } catch (e) {
+        // Don't block the attach if body fetch fails — fall back to preview.
+        console.warn('Failed to fetch full message body', e)
+      }
       attachEmail(poNumber, {
         conversationId: thread.conversationId,
         latestMessageId: thread.latestMessageId,
@@ -73,11 +89,16 @@ export const AttachEmailModal: React.FC<AttachEmailModalProps> = ({
         fromAddress: thread.fromAddress,
         latestDate: thread.latestDate,
         bodyPreview: thread.bodyPreview,
+        bodyContent,
+        bodyContentType,
+        webLink,
         attachedBy: currentUser,
         attachedAt: new Date().toISOString(),
       })
       onAttached()
       onClose()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setAttaching(null)
     }

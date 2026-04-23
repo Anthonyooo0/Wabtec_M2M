@@ -26,8 +26,10 @@ export interface EmailThread {
   bodyPreview: string
 }
 
-// What we actually persist per PO attachment. Keep small — pure metadata,
-// no body/attachments. User can re-open Outlook to see the full thread.
+// What we actually persist per PO attachment. We store the full body so
+// the drawer can show the actual email inline — Graph returns it as
+// either plain text or HTML; we keep the contentType so the renderer
+// knows how to handle it.
 export interface AttachedEmail {
   conversationId: string
   latestMessageId: string
@@ -36,6 +38,9 @@ export interface AttachedEmail {
   fromAddress: string
   latestDate: string
   bodyPreview: string
+  bodyContent?: string
+  bodyContentType?: 'text' | 'html'
+  webLink?: string
   attachedBy: string
   attachedAt: string
 }
@@ -137,6 +142,38 @@ export async function searchGraphMessages(
   }
   const data = (await res.json()) as { value: GraphMessage[] }
   return data.value || []
+}
+
+// Fetch the full body of one message. Used at attach-time so the drawer
+// can render the actual email content instead of just the 255-char preview.
+// Returns body content + contentType ('text' | 'html') and the webLink so
+// users can pop the message open in Outlook from the drawer.
+export async function fetchGraphMessageBody(
+  instance: IPublicClientApplication,
+  account: AccountInfo,
+  messageId: string,
+): Promise<{ content: string; contentType: 'text' | 'html'; webLink?: string }> {
+  const token = await acquireGraphToken(instance, account)
+  const url = new URL(`https://graph.microsoft.com/v1.0/me/messages/${messageId}`)
+  url.searchParams.set('$select', 'body,webLink')
+
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Graph message fetch failed: ${res.status} ${text}`)
+  }
+  const data = (await res.json()) as {
+    body?: { content?: string; contentType?: string }
+    webLink?: string
+  }
+  const contentType: 'text' | 'html' = data.body?.contentType === 'html' ? 'html' : 'text'
+  return {
+    content: data.body?.content || '',
+    contentType,
+    webLink: data.webLink,
+  }
 }
 
 // Collapse raw messages into one entry per conversationId, keeping the most

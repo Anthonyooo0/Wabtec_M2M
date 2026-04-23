@@ -214,7 +214,7 @@ export const PoCollaborationDrawer: React.FC = () => {
             try {
               const raw = localStorage.getItem('wabtec-po-email-attachments-v1')
               if (raw) {
-                const parsed = JSON.parse(raw) as Record<string, { conversationId: string; latestMessageId: string; subject: string; fromName: string; fromAddress: string; latestDate: string; bodyPreview: string }[]>
+                const parsed = JSON.parse(raw) as Record<string, { conversationId: string; latestMessageId: string; subject: string; fromName: string; fromAddress: string; latestDate: string; bodyPreview: string; bodyContent?: string; bodyContentType?: 'text' | 'html'; webLink?: string }[]>
                 const list = parsed[activePo] || []
                 if (list.length > 0) {
                   const latest = list[0]
@@ -259,6 +259,67 @@ const PickerItem: React.FC<{
     <span>{label}</span>
   </button>
 )
+
+// Render the full email body. Graph returns HTML for most emails, which
+// we strip to plain text — safer than dangerouslySetInnerHTML, and the
+// drawer is a working surface, not a full email viewer. Long bodies
+// collapse behind a "Show more" toggle so the timeline stays scannable.
+const EmailBody: React.FC<{
+  entry: { bodyPreview: string; bodyContent?: string; bodyContentType?: 'text' | 'html' }
+}> = ({ entry }) => {
+  const [expanded, setExpanded] = useState(false)
+
+  const text = useMemo(() => {
+    const raw = entry.bodyContent && entry.bodyContent.trim().length > 0 ? entry.bodyContent : entry.bodyPreview
+    if (entry.bodyContent && entry.bodyContentType === 'html') {
+      return htmlToText(entry.bodyContent)
+    }
+    return raw
+  }, [entry.bodyContent, entry.bodyContentType, entry.bodyPreview])
+
+  if (!text) return null
+
+  const COLLAPSED_LIMIT = 600
+  const isLong = text.length > COLLAPSED_LIMIT
+  const display = isLong && !expanded ? text.slice(0, COLLAPSED_LIMIT) + '…' : text
+
+  return (
+    <div className="mt-2">
+      <pre className="text-[11px] text-slate-600 whitespace-pre-wrap font-sans leading-relaxed">
+        {display}
+      </pre>
+      {isLong && (
+        <button
+          onClick={() => setExpanded((e) => !e)}
+          className="text-[10px] text-mac-accent font-medium mt-1 hover:underline"
+        >
+          {expanded ? 'Show less' : `Show full message (${Math.round(text.length / 1000)}k chars)`}
+        </button>
+      )}
+    </div>
+  )
+}
+
+// Naive HTML → plain text. Strips scripts/styles, collapses tags into
+// spaces, decodes the most common entities. Good enough for in-drawer
+// display; we're not trying to render rich emails fully.
+const htmlToText = (html: string): string => {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<\/(p|div|li|tr|h[1-6])>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
 
 const EnvelopeIcon: React.FC = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -317,8 +378,16 @@ const TimelineEntryCard: React.FC<{ entry: TimelineEntry; onRemove: () => void }
             {entry.email.fromName ? `${entry.email.fromName} · ` : ''}
             {entry.email.fromAddress}
           </div>
-          {entry.email.bodyPreview && (
-            <div className="text-[11px] text-slate-500 mt-1 line-clamp-2">{entry.email.bodyPreview}</div>
+          <EmailBody entry={entry.email} />
+          {entry.email.webLink && (
+            <a
+              href={entry.email.webLink}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block text-[10px] text-mac-accent font-medium mt-2 hover:underline"
+            >
+              Open in Outlook
+            </a>
           )}
         </div>
       )}
