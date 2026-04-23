@@ -92,8 +92,9 @@ export type DiscrepancyKind =
   | 'scc_cancelled_m2m_active'    // SCC says cancelled, M2M still active (critical)
   | 'scc_active_m2m_cancelled'    // inverse (we won't deliver what they expect)
   | 'scc_active_m2m_closed'       // M2M thinks done, SCC still expects
-  | 'missing_in_m2m'              // SCC has it, M2M doesn't (>= PENDING_INTAKE_DAYS old)
-  | 'pending_intake'              // SCC has it, M2M doesn't, but recent — sales rep just hasn't booked yet
+  | 'missing_in_m2m'              // SCC accepted it, M2M still doesn't have it (≥ PENDING_INTAKE_DAYS past acceptance)
+  | 'pending_intake'              // SCC accepted it recently, sales rep just hasn't booked yet
+  | 'awaiting_acceptance'          // SCC has the PO but it's never been accepted (NEW/REVISED/REJECTED) — not eligible for M2M yet, not a real discrepancy
   | 'ship_to_mismatch'             // SCC destination org doesn't match M2M ship-to address
   | 'qty_mismatch'
   | 'price_mismatch'
@@ -101,8 +102,11 @@ export type DiscrepancyKind =
 // Anything missing in M2M for fewer days than this is workflow lag, not a discrepancy.
 export const PENDING_INTAKE_DAYS = 5
 
-// True for everything *except* pending_intake (which is informational, not an issue).
-export const isDiscrepancy = (kind: DiscrepancyKind): boolean => kind !== 'pending_intake'
+// Real discrepancies only — excludes informational categories like orders
+// still awaiting acceptance on SCC (not eligible for M2M yet) and orders
+// recently accepted (intake grace period).
+export const isDiscrepancy = (kind: DiscrepancyKind): boolean =>
+  kind !== 'pending_intake' && kind !== 'awaiting_acceptance'
 
 // Days between SCC creation date (mm-dd-yyyy from the CSV) and today.
 // Returns null if the date string can't be parsed.
@@ -240,23 +244,34 @@ export function diff(
     if (!m) {
       // Only surface if SCC says the row is still meaningful (not a stale cancelled ghost).
       if (sccActive) {
-        const { days, source, date } = daysUnbooked(w.poNumber, w.creationDate, acceptedDateByPo)
-        const isRecent = days !== null && days < PENDING_INTAKE_DAYS
-        const sourceLabel =
-          source === 'accepted'
-            ? `accepted ${date ? fmtShortDate(date) : ''}`.trim()
-            : `created ${w.creationDate || ''}`.trim()
-        discrepancies.push({
-          kind: isRecent ? 'pending_intake' : 'missing_in_m2m',
-          wabtecPo: w.poNumber,
-          lineNo: w.poLineNumber,
-          item: w.itemNumber,
-          summary: isRecent
-            ? `Accepted on SCC ${days} day${days === 1 ? '' : 's'} ago — give the sales rep a moment to book it.`
-            : `SCC ${sourceLabel}, no matching line in M2M.`,
-          wabtec: w,
-          m2m: null,
-        })
+        const accepted = acceptedDateByPo.get(w.poNumber.trim())
+        if (!accepted) {
+          // Never accepted — still sitting in NEW/REVISED/REJECTED. Not a
+          // discrepancy; it's not even eligible to be in M2M yet.
+          discrepancies.push({
+            kind: 'awaiting_acceptance',
+            wabtecPo: w.poNumber,
+            lineNo: w.poLineNumber,
+            item: w.itemNumber,
+            summary: `SCC hasn't accepted this PO yet — nothing to book in M2M.`,
+            wabtec: w,
+            m2m: null,
+          })
+        } else {
+          const { days } = daysUnbooked(w.poNumber, w.creationDate, acceptedDateByPo)
+          const isRecent = days !== null && days < PENDING_INTAKE_DAYS
+          discrepancies.push({
+            kind: isRecent ? 'pending_intake' : 'missing_in_m2m',
+            wabtecPo: w.poNumber,
+            lineNo: w.poLineNumber,
+            item: w.itemNumber,
+            summary: isRecent
+              ? `Accepted on SCC ${days} day${days === 1 ? '' : 's'} ago — give the sales rep a moment to book it.`
+              : `SCC accepted ${fmtShortDate(accepted)}, no matching line in M2M.`,
+            wabtec: w,
+            m2m: null,
+          })
+        }
       }
       continue
     }
