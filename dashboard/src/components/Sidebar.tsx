@@ -40,12 +40,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   return (
     <aside
-      className={`sidebar flex flex-col transition-[width] duration-200 flex-shrink-0 text-mauve-7 ${
+      className={`sidebar flex flex-col transition-[width] duration-200 flex-shrink-0 text-blue-200 ${
         collapsed ? 'w-16' : 'w-60'
       }`}
     >
       {/* Brand block */}
-      <div className="px-4 py-4 border-b border-mauve-12">
+      <div className="px-4 py-4 border-b border-white/10">
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 flex items-center justify-center flex-shrink-0 bg-white rounded-md p-1">
             <img src="/mac_logo.png" alt="MAC" className="w-full h-full object-contain" />
@@ -53,7 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!collapsed && (
             <div className="overflow-hidden">
               <h1 className="font-semibold text-[13px] truncate text-white tracking-tight">Wabtec SCC</h1>
-              <p className="text-mauve-11 text-[11px] truncate">{currentUser}</p>
+              <p className="text-blue-200/70 text-[11px] truncate">{currentUser}</p>
             </div>
           )}
         </div>
@@ -70,8 +70,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               title={collapsed ? label : undefined}
               className={`w-full flex items-center gap-3 px-4 py-2 text-[13px] transition-colors ${
                 isActive
-                  ? 'nav-active text-white bg-mac-navy'
-                  : 'text-mauve-9 hover:text-white hover:bg-mauve-11/60'
+                  ? 'nav-active text-white bg-white/10'
+                  : 'text-blue-200 hover:text-white hover:bg-white/5'
               }`}
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
@@ -82,11 +82,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Footer */}
-      <div className="px-2 py-3 border-t border-mauve-12 space-y-1">
+      <div className="px-2 py-3 border-t border-white/10 space-y-1">
         <button
           onClick={onLogout}
           title={collapsed ? 'Sign out' : undefined}
-          className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-mauve-9 hover:text-white hover:bg-mauve-11/60 rounded-md transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-blue-200 hover:text-white hover:bg-white/5 rounded-md transition-colors"
         >
           <LogoutIcon className="w-4 h-4 flex-shrink-0" />
           {!collapsed && <span className="font-medium">Sign out</span>}
@@ -94,7 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           onClick={onToggleCollapse}
-          className="w-full flex items-center justify-center gap-2 px-3 py-1.5 text-[11px] text-mauve-11 hover:text-mauve-7 transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-3 py-1.5 text-[11px] text-blue-200/70 hover:text-white transition-colors"
           title={collapsed ? 'Expand' : 'Collapse'}
         >
           <ChevronLeftIcon className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
