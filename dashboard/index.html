@@ -5,23 +5,41 @@
     <link rel="icon" type="image/png" href="/mac_logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Wabtec SCC Portal — MAC Products</title>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Geist + Geist Mono — engineering-grade typeface from Vercel.
+         Sans pairs with the mono so UUIDs/timestamps/IDs feel coherent. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com/3.4.16"></script>
     <script>
+      // Radix-style 12-step neutrals + brand-tinted accent (MAC navy).
+      // The mauve scale is warmer than tailwind zinc/slate — subtly more
+      // intentional, less generic. Accent step 9 is the MAC navy itself,
+      // step 11 is text-grade contrast against light surfaces.
       tailwind.config = {
         theme: {
           extend: {
             colors: {
+              mauve: {
+                1:  '#fdfcfd', 2:  '#faf9fb', 3:  '#f2eff3', 4:  '#eae7ec',
+                5:  '#e3dfe6', 6:  '#dbd8e0', 7:  '#d0cdd7', 8:  '#bcbac7',
+                9:  '#8e8c99', 10: '#84828e', 11: '#65636d', 12: '#211f26',
+              },
+              accent: {
+                1:  '#fdfdfe', 2:  '#f5f8fc', 3:  '#e9eff7', 4:  '#dbe5f2',
+                5:  '#cbd9eb', 6:  '#b8cae2', 7:  '#9eb6d6', 8:  '#7d9bc8',
+                9:  '#1a365d', 10: '#13294a', 11: '#1f4880', 12: '#10243f',
+              },
               mac: {
-                navy: '#1a365d',
-                blue: '#2c5aa0',
-                light: '#f0f4f8',
-                accent: '#3182ce',
+                navy:   '#1a365d',
+                blue:   '#2c5aa0',
+                light:  '#fdfcfd',
+                accent: '#1a365d',
               }
             },
             fontFamily: {
-              sans: ['DM Sans', 'system-ui', 'sans-serif'],
-              mono: ['Space Mono', 'monospace'],
+              sans: ['Geist', 'system-ui', 'sans-serif'],
+              mono: ['Geist Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
             }
           }
         }
@@ -29,16 +47,20 @@
     </script>
     <style>
       body {
-        font-family: 'DM Sans', system-ui, sans-serif;
-        font-feature-settings: 'cv11', 'ss01';
-        letter-spacing: -0.005em;
+        font-family: 'Geist', system-ui, sans-serif;
+        font-feature-settings: 'ss01', 'cv11';
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
-      /* Vercel-style sidebar: solid near-black, hairline right edge */
+      /* Sidebar: solid near-black with mauve-cooled hairline right edge.
+         Near-black (#0a0a0a / mauve-12-dark) reads warmer than pure black
+         which is the AI-default tell per the design research doc. */
       .sidebar {
-        background: #09090b;
-        border-right: 1px solid #18181b;
+        background: #0a0a0a;
+        border-right: 1px solid #1f1d22;
       }
-      /* Active nav: subtle bg + thin left accent (white, not bright blue) */
+      /* Active nav: subtle bg + thin left accent. White accent (not blue)
+         keeps the "monochrome with one accent" rule intact. */
       .nav-active { position: relative; }
       .nav-active::before {
         content: '';

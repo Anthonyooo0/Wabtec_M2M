@@ -29,12 +29,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
-      <div className="bg-white border border-zinc-200 rounded-lg w-full max-w-sm p-8">
+    <div className="min-h-screen flex items-center justify-center bg-mauve-2 px-4">
+      <div className="bg-white border border-mauve-6 rounded-lg w-full max-w-sm p-8">
         <div className="text-center mb-8">
           <img src="/mac_logo.png" alt="MAC" className="w-12 h-12 mx-auto mb-4 object-contain" />
-          <h1 className="text-[18px] font-semibold text-zinc-900 tracking-tight">Wabtec SCC Portal</h1>
-          <p className="text-[13px] text-zinc-500 mt-1">Sign in with your MAC Products account</p>
+          <h1 className="text-[18px] font-semibold text-mauve-12 tracking-tight">Wabtec SCC Portal</h1>
+          <p className="text-[13px] text-mauve-11 mt-1">Sign in with your MAC Products account</p>
         </div>
 
         {error && (
@@ -46,7 +46,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         <button
           onClick={handleSignIn}
-          className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-medium text-[13px] py-2.5 px-4 rounded-md transition-colors flex items-center justify-center gap-2.5"
+          className="w-full bg-mac-navy hover:bg-mac-blue text-white font-medium text-[13px] py-2.5 px-4 rounded-md transition-colors flex items-center justify-center gap-2.5"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 21 21">
             <rect x="1" y="1" width="9" height="9" fill="#f25022" />
@@ -60,14 +60,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         {import.meta.env.DEV && (
           <button
             onClick={() => onLogin('dev@macproducts.net')}
-            className="mt-3 w-full text-[11px] text-zinc-500 hover:text-zinc-700 py-2 border border-dashed border-zinc-200 rounded-md transition-colors"
+            className="mt-3 w-full text-[11px] text-mauve-11 hover:text-mauve-12 py-2 border border-dashed border-mauve-6 rounded-md transition-colors"
           >
             Dev bypass · dev@macproducts.net
           </button>
         )}
 
-        <div className="mt-8 pt-5 border-t border-zinc-100 text-center">
-          <p className="text-[10px] text-zinc-400 tracking-tight">
+        <div className="mt-8 pt-5 border-t border-mauve-4 text-center">
+          <p className="text-[10px] text-mauve-9 tracking-tight">
             MAC Products internal system
           </p>
         </div>

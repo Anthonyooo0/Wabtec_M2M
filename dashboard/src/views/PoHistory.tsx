@@ -63,19 +63,19 @@ export const PoHistory: React.FC = () => {
 
   return (
     <div className="space-y-4 view-transition">
-      <div className="bg-white border border-zinc-200 rounded-lg p-4">
-        <label className="block text-[11px] font-medium text-zinc-500 mb-2">Search PO number</label>
+      <div className="bg-white border border-mauve-6 rounded-lg p-4">
+        <label className="block text-[11px] font-medium text-mauve-11 mb-2">Search PO number</label>
         <div className="relative">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="e.g. 174496878"
-            className="w-full px-3 py-2 pr-20 text-[13px] rounded-md border border-zinc-200 bg-zinc-50 hover:bg-white focus:bg-white focus:border-zinc-400 focus:ring-0 outline-none font-mono transition-colors placeholder:text-zinc-400"
+            className="w-full px-3 py-2 pr-20 text-[13px] rounded-md border border-mauve-6 bg-mauve-2 hover:bg-white focus:bg-white focus:border-mauve-8 focus:ring-0 outline-none font-mono transition-colors placeholder:text-mauve-9"
           />
           {query && (
             <button
               onClick={() => { setQuery(''); setSelected(null) }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-[12px] text-zinc-500 hover:text-zinc-900 font-medium px-2 py-0.5 hover:bg-zinc-100 rounded"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[12px] text-mauve-11 hover:text-mauve-12 font-medium px-2 py-0.5 hover:bg-mauve-3 rounded"
             >
               Clear
             </button>
@@ -83,15 +83,15 @@ export const PoHistory: React.FC = () => {
         </div>
 
         {query && matches.length > 0 && !selected && (
-          <div className="mt-3 border border-zinc-200 rounded-md max-h-72 overflow-y-auto">
+          <div className="mt-3 border border-mauve-6 rounded-md max-h-72 overflow-y-auto">
             {matches.map((e, i) => (
               <button
                 key={e.poNumber}
                 onClick={() => setSelected(e.poNumber)}
-                className={`w-full text-left px-3 py-2 hover:bg-zinc-50 transition-colors flex items-center justify-between ${i > 0 ? 'border-t border-zinc-100' : ''}`}
+                className={`w-full text-left px-3 py-2 hover:bg-mauve-2 transition-colors flex items-center justify-between ${i > 0 ? 'border-t border-mauve-4' : ''}`}
               >
-                <span className="font-mono text-[13px] text-zinc-900">{e.poNumber}</span>
-                <span className="text-[11px] font-mono text-zinc-500 tabular-nums">
+                <span className="font-mono text-[13px] text-mauve-12">{e.poNumber}</span>
+                <span className="text-[11px] font-mono text-mauve-11 tabular-nums">
                   {e.historyRowCount} {e.historyRowCount === 1 ? 'revision' : 'revisions'}
                 </span>
               </button>
@@ -99,16 +99,16 @@ export const PoHistory: React.FC = () => {
           </div>
         )}
         {query && matches.length === 0 && !loading && (
-          <div className="mt-3 text-[12px] text-zinc-500">
+          <div className="mt-3 text-[12px] text-mauve-11">
             No PO found. {entries.length.toLocaleString()} POs indexed.
           </div>
         )}
       </div>
 
       {loading && (
-        <div className="bg-white border border-zinc-200 rounded-lg p-12 text-center">
-          <div className="w-5 h-5 mx-auto border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin" />
-          <p className="mt-3 text-[12px] text-zinc-500">Loading history</p>
+        <div className="bg-white border border-mauve-6 rounded-lg p-12 text-center">
+          <div className="w-5 h-5 mx-auto border-2 border-mauve-6 border-t-mac-navy rounded-full animate-spin" />
+          <p className="mt-3 text-[12px] text-mauve-11">Loading history</p>
         </div>
       )}
 
@@ -119,14 +119,14 @@ export const PoHistory: React.FC = () => {
       )}
 
       {activeEntry && (
-        <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden">
-          <div className="px-5 py-3 border-b border-zinc-200 flex items-center justify-between gap-3 flex-wrap">
+        <div className="bg-white border border-mauve-6 rounded-lg overflow-hidden">
+          <div className="px-5 py-3 border-b border-mauve-6 flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <div className="text-[11px] text-zinc-500">Selected PO</div>
-              <div className="text-[16px] font-mono text-zinc-900 mt-0.5">
+              <div className="text-[11px] text-mauve-11">Selected PO</div>
+              <div className="text-[16px] font-mono text-mauve-12 mt-0.5">
                 <PoLink poNumber={activeEntry.poNumber} chip />
               </div>
-              <div className="text-[11px] text-zinc-500 mt-1">
+              <div className="text-[11px] text-mauve-11 mt-1">
                 <span className="tabular-nums">{activeEntry.historyRowCount}</span>{' '}
                 {activeEntry.historyRowCount === 1 ? 'revision' : 'revisions'}
                 {' · scraped '}
@@ -135,7 +135,7 @@ export const PoHistory: React.FC = () => {
             </div>
             <button
               onClick={() => setSelected(null)}
-              className="px-3 py-1.5 text-[12px] font-medium text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors"
+              className="px-3 py-1.5 text-[12px] font-medium text-mauve-12 hover:text-mauve-12 hover:bg-mauve-3 rounded-md transition-colors"
             >
               Back to search
             </button>
@@ -144,11 +144,11 @@ export const PoHistory: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-[13px]">
               <thead>
-                <tr className="border-b border-zinc-200 bg-zinc-50/50">
+                <tr className="border-b border-mauve-6 bg-mauve-3/50">
                   {PRIMARY_COLUMNS.map((c) => (
                     <th
                       key={c.key}
-                      className={`px-3 py-2.5 text-[11px] font-medium text-zinc-500 tracking-tight whitespace-nowrap ${c.numeric ? 'text-right' : 'text-left'}`}
+                      className={`px-3 py-2.5 text-[11px] font-medium text-mauve-11 tracking-tight whitespace-nowrap ${c.numeric ? 'text-right' : 'text-left'}`}
                     >
                       {c.label}
                     </th>
@@ -157,7 +157,7 @@ export const PoHistory: React.FC = () => {
               </thead>
               <tbody>
                 {sortedRows.map((row, idx) => (
-                  <tr key={idx} className="border-t border-zinc-100 hover:bg-zinc-50/60">
+                  <tr key={idx} className="border-t border-mauve-4 hover:bg-mauve-3/60">
                     {PRIMARY_COLUMNS.map((c) => (
                       <Cell key={c.key} value={row[c.key]} col={c} />
                     ))}
@@ -170,15 +170,15 @@ export const PoHistory: React.FC = () => {
       )}
 
       {!activeEntry && !query && !loading && (
-        <div className="bg-white border border-zinc-200 rounded-lg p-12 text-center">
-          <h3 className="text-[15px] font-semibold text-zinc-900 tracking-tight">
+        <div className="bg-white border border-mauve-6 rounded-lg p-12 text-center">
+          <h3 className="text-[15px] font-semibold text-mauve-12 tracking-tight">
             Search a PO to see its history
           </h3>
-          <p className="mt-2 text-[13px] text-zinc-500 max-w-lg mx-auto">
+          <p className="mt-2 text-[13px] text-mauve-11 max-w-lg mx-auto">
             Sourced from the Wabtec SCC "PO Details → History" tab. Shows every revision of a PO:
             who changed what, when, and whether it was a core (pricing/quantity) or non-core change.
           </p>
-          <p className="mt-3 text-[11px] text-zinc-400 font-mono tabular-nums">
+          <p className="mt-3 text-[11px] text-mauve-9 font-mono tabular-nums">
             {entries.length.toLocaleString()} POs indexed
           </p>
         </div>
@@ -192,7 +192,7 @@ const Cell: React.FC<{
   col: { key: string; numeric?: boolean }
 }> = ({ value, col }) => {
   const v = value || ''
-  let display: React.ReactNode = v || <span className="text-zinc-300">—</span>
+  let display: React.ReactNode = v || <span className="text-mauve-7">—</span>
 
   // Type Of Change pill — CORE = pricing/qty/ship (impacts M2M), NON-CORE = admin.
   if (col.key === 'Type Of Change' && v) {
@@ -200,9 +200,9 @@ const Cell: React.FC<{
     const dot =
       kind === 'CORE' ? 'bg-red-500'
       : kind === 'INITIAL' ? 'bg-blue-500'
-      : 'bg-zinc-400'
+      : 'bg-mauve-9'
     display = (
-      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-zinc-200 bg-white text-[10px] font-medium text-zinc-700">
+      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-mauve-6 bg-white text-[10px] font-medium text-mauve-12">
         <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
         {kind}
       </span>
@@ -210,12 +210,12 @@ const Cell: React.FC<{
   }
 
   if (col.key === 'Change Type' && v) {
-    display = <span className="text-zinc-900">{v}</span>
+    display = <span className="text-mauve-12">{v}</span>
   }
 
   return (
     <td
-      className={`px-3 py-2 text-zinc-700 whitespace-nowrap ${
+      className={`px-3 py-2 text-mauve-12 whitespace-nowrap ${
         col.numeric ? 'text-right tabular-nums font-mono text-[12px]' : ''
       } ${col.key === 'Updated time' ? 'font-mono text-[12px]' : ''}`}
     >

@@ -14,7 +14,7 @@ const Pill: React.FC<{
       : 'px-2 py-0.5 text-[10px]'
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white text-zinc-700 font-medium ${sizeClasses}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border border-mauve-6 bg-white text-mauve-12 font-medium ${sizeClasses}`}
     >
       <span className={`${size === 'lg' ? 'w-2 h-2' : 'w-1.5 h-1.5'} rounded-full ${dot}`} />
       {label}
@@ -27,12 +27,12 @@ export const SCCStatusBadge: React.FC<{ action: string; size?: 'sm' | 'lg' }> = 
   size = 'sm',
 }) => {
   const raw = (action || '').trim()
-  if (!raw) return <span className="text-zinc-400 text-[12px]">—</span>
+  if (!raw) return <span className="text-mauve-9 text-[12px]">—</span>
 
   const lower = raw.toLowerCase()
-  let dot = 'bg-zinc-400'
+  let dot = 'bg-mauve-9'
   if (/cancel|reject/.test(lower)) dot = 'bg-red-500'
-  else if (/closed/.test(lower)) dot = 'bg-zinc-400'
+  else if (/closed/.test(lower)) dot = 'bg-mauve-9'
   else if (/accept|approv/.test(lower)) dot = 'bg-green-500'
   else if (/pend|await/.test(lower)) dot = 'bg-blue-500'
   else if (/late|bad/.test(lower)) dot = 'bg-amber-500'
@@ -45,7 +45,7 @@ export const M2MStateBadge: React.FC<{ row: M2MPO; size?: 'sm' | 'lg' }> = ({
   size = 'sm',
 }) => {
   if (row.cancelledDate) return <Pill label="Cancelled" dot="bg-red-500" size={size} />
-  if (row.closedDate) return <Pill label="Closed" dot="bg-zinc-400" size={size} />
+  if (row.closedDate) return <Pill label="Closed" dot="bg-mauve-9" size={size} />
   return <Pill label="Active" dot="bg-blue-500" size={size} />
 }
 

@@ -133,7 +133,7 @@ const App: React.FC = () => {
 
   return (
     <PoCollaborationProvider>
-    <div className="flex h-screen overflow-hidden bg-zinc-50">
+    <div className="flex h-screen overflow-hidden bg-mauve-2">
       <Sidebar
         currentUser={currentUser}
         currentView={currentView}
@@ -144,17 +144,17 @@ const App: React.FC = () => {
       />
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white border-b border-zinc-200 px-6 py-3 flex items-center justify-between">
+        <header className="bg-white border-b border-mauve-6 px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h2 className="text-[15px] font-semibold text-zinc-900 tracking-tight">{viewTitle}</h2>
+            <h2 className="text-[15px] font-semibold text-mauve-12 tracking-tight">{viewTitle}</h2>
             {lastSync && (
               <>
-                <span className="w-px h-4 bg-zinc-200" />
-                <span className="text-[11px] text-zinc-500">Last sync · <span className="text-zinc-700 tabular-nums">{lastSync}</span></span>
+                <span className="w-px h-4 bg-mauve-4" />
+                <span className="text-[11px] text-mauve-11">Last sync · <span className="text-mauve-12 tabular-nums">{lastSync}</span></span>
               </>
             )}
           </div>
-          <span className="font-mono text-[10px] text-zinc-400 tracking-tight">{VERSION}</span>
+          <span className="font-mono text-[10px] text-mauve-9 tracking-tight">{VERSION}</span>
         </header>
 
         <div className="flex-1 overflow-y-auto p-6">
@@ -208,9 +208,9 @@ const App: React.FC = () => {
 }
 
 const Placeholder: React.FC<{ title: string; body: string }> = ({ title, body }) => (
-  <div className="view-transition bg-white border border-zinc-200 rounded-lg p-8">
-    <h3 className="text-[15px] font-semibold text-zinc-900 tracking-tight">{title}</h3>
-    <p className="mt-2 text-[13px] text-zinc-500 max-w-2xl">{body}</p>
+  <div className="view-transition bg-white border border-mauve-6 rounded-lg p-8">
+    <h3 className="text-[15px] font-semibold text-mauve-12 tracking-tight">{title}</h3>
+    <p className="mt-2 text-[13px] text-mauve-11 max-w-2xl">{body}</p>
   </div>
 )
 

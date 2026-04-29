@@ -18,28 +18,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, onRefresh }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-lg overflow-hidden">
-          <div className="px-5 py-3 border-b border-zinc-200 flex justify-between items-center">
-            <h3 className="text-[13px] font-semibold text-zinc-900 tracking-tight">Recent activity</h3>
+        <div className="lg:col-span-2 bg-white border border-mauve-6 rounded-lg overflow-hidden">
+          <div className="px-5 py-3 border-b border-mauve-6 flex justify-between items-center">
+            <h3 className="text-[13px] font-semibold text-mauve-12 tracking-tight">Recent activity</h3>
             <button
               onClick={onRefresh}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium text-mauve-12 hover:text-mauve-12 hover:bg-mauve-3 rounded-md transition-colors"
             >
               <RefreshIcon className="w-3.5 h-3.5" />
               Refresh
             </button>
           </div>
           <div className="p-10 text-center">
-            <p className="text-[13px] text-zinc-500">No sync runs yet.</p>
-            <p className="text-[12px] text-zinc-400 mt-1">
+            <p className="text-[13px] text-mauve-11">No sync runs yet.</p>
+            <p className="text-[12px] text-mauve-9 mt-1">
               Kick off the Wabtec SCC scraper to populate this view.
             </p>
           </div>
         </div>
 
-        <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden">
-          <div className="px-5 py-3 border-b border-zinc-200">
-            <h3 className="text-[13px] font-semibold text-zinc-900 tracking-tight">Data sources</h3>
+        <div className="bg-white border border-mauve-6 rounded-lg overflow-hidden">
+          <div className="px-5 py-3 border-b border-mauve-6">
+            <h3 className="text-[13px] font-semibold text-mauve-12 tracking-tight">Data sources</h3>
           </div>
           <div className="px-5 py-4 space-y-3">
             <SourceRow name="Wabtec SCC" status="ready" />
@@ -64,19 +64,19 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, tone, smallValue }) =
     tone === 'critical' ? 'bg-red-500'
     : tone === 'warning' ? 'bg-amber-500'
     : tone === 'success' ? 'bg-green-500'
-    : tone === 'muted' ? 'bg-zinc-300'
-    : 'bg-zinc-400'
+    : tone === 'muted' ? 'bg-mauve-7'
+    : 'bg-mauve-9'
   return (
-    <div className="bg-white border border-zinc-200 rounded-lg p-5">
+    <div className="bg-white border border-mauve-6 rounded-lg p-5">
       <div className="flex items-center gap-2 mb-2">
         <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
-        <span className="text-[11px] font-medium text-zinc-500 tracking-tight">{label}</span>
+        <span className="text-[11px] font-medium text-mauve-11 tracking-tight">{label}</span>
       </div>
       <div
         className={
           smallValue
-            ? 'text-[13px] text-zinc-900 font-mono'
-            : 'text-[28px] font-semibold text-zinc-900 tabular-nums tracking-tight leading-none'
+            ? 'text-[13px] text-mauve-12 font-mono'
+            : 'text-[28px] font-semibold text-mauve-12 tabular-nums tracking-tight leading-none'
         }
       >
         {value}
@@ -98,10 +98,10 @@ const SourceRow: React.FC<SourceRowProps> = ({ name, status }) => {
   const label = status === 'ready' ? 'Ready' : status === 'syncing' ? 'Syncing' : 'Error'
   return (
     <div className="flex items-center justify-between text-[13px]">
-      <span className="text-zinc-700">{name}</span>
+      <span className="text-mauve-12">{name}</span>
       <span className="inline-flex items-center gap-1.5">
         <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
-        <span className="text-[11px] text-zinc-500 font-medium">{label}</span>
+        <span className="text-[11px] text-mauve-11 font-medium">{label}</span>
       </span>
     </div>
   )

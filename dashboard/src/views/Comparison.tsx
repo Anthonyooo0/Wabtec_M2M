@@ -151,7 +151,7 @@ export const Comparison: React.FC<ComparisonProps> = ({
   return (
     <div className="space-y-4 view-transition">
       {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-zinc-200">
+      <div className="flex items-center gap-1 border-b border-mauve-6">
         <TabButton active={tab === 'wabtec'} onClick={() => onTabChange('wabtec')}>
           Wabtec SCC <Count n={wabtec.length} />
         </TabButton>
@@ -164,18 +164,18 @@ export const Comparison: React.FC<ComparisonProps> = ({
       </div>
 
       {tab !== 'side-by-side' && (
-        <div className="bg-white border border-zinc-200 rounded-lg p-3 space-y-3">
+        <div className="bg-white border border-mauve-6 rounded-lg p-3 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <input
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1) }}
               placeholder="Search PO, item, description…"
-              className="flex-1 max-w-md px-3 py-1.5 text-[13px] border border-zinc-200 rounded-md bg-zinc-50 hover:bg-white focus:bg-white focus:border-zinc-400 focus:ring-0 outline-none transition-colors placeholder:text-zinc-400"
+              className="flex-1 max-w-md px-3 py-1.5 text-[13px] border border-mauve-6 rounded-md bg-mauve-2 hover:bg-white focus:bg-white focus:border-mauve-8 focus:ring-0 outline-none transition-colors placeholder:text-mauve-9"
             />
-            <div className="text-[11px] text-zinc-500 tabular-nums">
+            <div className="text-[11px] text-mauve-11 tabular-nums">
               {filtered.length.toLocaleString()} rows
               {m2mOnlyCount > 0 && tab === 'm2m' && (
-                <span className="ml-2 text-zinc-400">
+                <span className="ml-2 text-mauve-9">
                   (+{m2mOnlyCount.toLocaleString()} M2M-only, not in SCC)
                 </span>
               )}
@@ -205,11 +205,11 @@ export const Comparison: React.FC<ComparisonProps> = ({
               onClick={() => { setOnlyDiscrepancies((v) => !v); setPage(1) }}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-medium rounded-md border transition-colors ${
                 onlyDiscrepancies
-                  ? 'bg-zinc-900 text-white border-zinc-900'
-                  : 'bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50'
+                  ? 'bg-mac-navy text-white border-mac-navy'
+                  : 'bg-white text-mauve-12 border-mauve-6 hover:bg-mauve-2'
               }`}
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${onlyDiscrepancies ? 'bg-red-400' : 'bg-zinc-300'}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${onlyDiscrepancies ? 'bg-red-400' : 'bg-mauve-7'}`} />
               {onlyDiscrepancies ? 'Discrepancies only' : 'Only discrepancies'}
             </button>
 
@@ -218,7 +218,7 @@ export const Comparison: React.FC<ComparisonProps> = ({
             {filtersActive && (
               <button
                 onClick={clearFilters}
-                className="text-[12px] font-medium text-zinc-700 hover:text-zinc-900 underline"
+                className="text-[12px] font-medium text-mauve-12 hover:text-mauve-12 underline"
               >
                 Clear filters
               </button>
@@ -228,9 +228,9 @@ export const Comparison: React.FC<ComparisonProps> = ({
       )}
 
       {loading && (
-        <div className="bg-white border border-zinc-200 rounded-lg p-12 text-center">
-          <div className="w-5 h-5 mx-auto border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin" />
-          <p className="mt-3 text-[12px] text-zinc-500">Loading</p>
+        <div className="bg-white border border-mauve-6 rounded-lg p-12 text-center">
+          <div className="w-5 h-5 mx-auto border-2 border-mauve-6 border-t-mac-navy rounded-full animate-spin" />
+          <p className="mt-3 text-[12px] text-mauve-11">Loading</p>
         </div>
       )}
       {error && (
@@ -251,7 +251,7 @@ export const Comparison: React.FC<ComparisonProps> = ({
 }
 
 const Count: React.FC<{ n: number; label?: string }> = ({ n, label }) => (
-  <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-mono rounded bg-zinc-100 text-zinc-600 tabular-nums">
+  <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-mono rounded bg-mauve-3 text-mauve-11 tabular-nums">
     {n.toLocaleString()}{label ? ` ${label}` : ''}
   </span>
 )
@@ -264,7 +264,7 @@ const FilterSelect: React.FC<{
   <select
     value={value}
     onChange={(e) => onChange(e.target.value)}
-    className="px-2.5 py-1.5 text-[12px] rounded-md border border-zinc-200 bg-zinc-50 hover:bg-white focus:bg-white focus:border-zinc-400 focus:ring-0 outline-none min-w-[140px] transition-colors"
+    className="px-2.5 py-1.5 text-[12px] rounded-md border border-mauve-6 bg-mauve-2 hover:bg-white focus:bg-white focus:border-mauve-8 focus:ring-0 outline-none min-w-[140px] transition-colors"
   >
     {children}
   </select>
@@ -279,8 +279,8 @@ const TabButton: React.FC<{
     onClick={onClick}
     className={`px-3 py-2.5 text-[13px] font-medium flex items-center transition-colors ${
       active
-        ? 'text-zinc-900 border-b-2 border-zinc-900 -mb-px'
-        : 'text-zinc-500 hover:text-zinc-900 border-b-2 border-transparent -mb-px'
+        ? 'text-mauve-12 border-b-2 border-mac-navy -mb-px'
+        : 'text-mauve-11 hover:text-mauve-12 border-b-2 border-transparent -mb-px'
     }`}
   >
     {children}
@@ -288,11 +288,11 @@ const TabButton: React.FC<{
 )
 
 const WabtecTable: React.FC<{ rows: AlignedRow[] }> = ({ rows }) => (
-  <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden">
+  <div className="bg-white border border-mauve-6 rounded-lg overflow-hidden">
     <div className="overflow-x-auto">
       <table className="w-full text-[13px]">
         <thead>
-          <tr className="border-b border-zinc-200 bg-zinc-50/50">
+          <tr className="border-b border-mauve-6 bg-mauve-3/50">
             <Th>PO</Th><Th>Line</Th><Th>Item</Th><Th>Description</Th>
             <Th numeric>Total</Th><Th numeric>Recv</Th><Th numeric>Open</Th>
             <Th>Promise</Th><Th>Created</Th><Th numeric>Unit $</Th>
@@ -301,7 +301,7 @@ const WabtecTable: React.FC<{ rows: AlignedRow[] }> = ({ rows }) => (
         </thead>
         <tbody>
           {rows.map(({ wabtec: r }, idx) => (
-            <tr key={`${r.poNumber}-${r.poLineNumber}-${idx}`} className="border-t border-zinc-100 hover:bg-zinc-50/60">
+            <tr key={`${r.poNumber}-${r.poLineNumber}-${idx}`} className="border-t border-mauve-4 hover:bg-mauve-3/60">
               <Td mono><PoLink poNumber={r.poNumber} /></Td>
               <Td>{r.poLineNumber}</Td>
               <Td mono>{r.itemNumber}</Td>
@@ -316,14 +316,14 @@ const WabtecTable: React.FC<{ rows: AlignedRow[] }> = ({ rows }) => (
               <Td className="max-w-[260px] truncate" title={formatShipTo(r.shipTo) || r.destinationOrg || ''}>
                 {r.shipTo ? (
                   <div className="leading-tight">
-                    <div className="text-zinc-700 truncate">{r.shipTo.address || '—'}</div>
-                    <div className="text-[11px] text-zinc-500 truncate">
+                    <div className="text-mauve-12 truncate">{r.shipTo.address || '—'}</div>
+                    <div className="text-[11px] text-mauve-11 truncate">
                       {[r.shipTo.city, r.shipTo.state].filter(Boolean).join(', ')}
                       {r.shipTo.zip ? ` ${r.shipTo.zip}` : ''}
                     </div>
                   </div>
                 ) : r.destinationOrg ? (
-                  <span className="text-zinc-500 italic">{r.destinationOrg}</span>
+                  <span className="text-mauve-11 italic">{r.destinationOrg}</span>
                 ) : '—'}
               </Td>
               <Td><SCCStatusBadge action={r.action} /></Td>
@@ -336,11 +336,11 @@ const WabtecTable: React.FC<{ rows: AlignedRow[] }> = ({ rows }) => (
 )
 
 const M2MTable: React.FC<{ rows: AlignedRow[] }> = ({ rows }) => (
-  <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden">
+  <div className="bg-white border border-mauve-6 rounded-lg overflow-hidden">
     <div className="overflow-x-auto">
       <table className="w-full text-[13px]">
         <thead>
-          <tr className="border-b border-zinc-200 bg-zinc-50/50">
+          <tr className="border-b border-mauve-6 bg-mauve-3/50">
             <Th>Wabtec PO</Th><Th>MAC SO</Th><Th>Line</Th><Th>Item</Th>
             <Th>Description</Th><Th numeric>Order</Th><Th numeric>Shipped</Th>
             <Th numeric>Unit $</Th><Th>Promise</Th><Th>Ordered</Th>
@@ -351,14 +351,14 @@ const M2MTable: React.FC<{ rows: AlignedRow[] }> = ({ rows }) => (
           {rows.map(({ wabtec: w, m2m: m }, idx) => {
             if (!m) {
               return (
-                <tr key={`${w.poNumber}-${w.poLineNumber}-${idx}`} className="border-t border-zinc-100 bg-red-50/30">
+                <tr key={`${w.poNumber}-${w.poLineNumber}-${idx}`} className="border-t border-mauve-4 bg-red-50/30">
                   <Td mono><PoLink poNumber={w.poNumber} /></Td>
                   <Td className="text-red-600 italic" colSpan={11}>Not found in M2M</Td>
                 </tr>
               )
             }
             return (
-              <tr key={`${m.wabtecPo}-${m.lineNo}-${idx}`} className="border-t border-zinc-100 hover:bg-zinc-50/60">
+              <tr key={`${m.wabtecPo}-${m.lineNo}-${idx}`} className="border-t border-mauve-4 hover:bg-mauve-3/60">
                 <Td mono><PoLink poNumber={m.wabtecPo} /></Td>
                 <Td mono>{m.macSo}</Td>
                 <Td>{m.lineNo}</Td>
@@ -383,7 +383,7 @@ const M2MTable: React.FC<{ rows: AlignedRow[] }> = ({ rows }) => (
 )
 
 const Th: React.FC<{ children: React.ReactNode; numeric?: boolean }> = ({ children, numeric }) => (
-  <th className={`px-3 py-2.5 text-[11px] font-medium text-zinc-500 tracking-tight whitespace-nowrap ${numeric ? 'text-right' : 'text-left'}`}>
+  <th className={`px-3 py-2.5 text-[11px] font-medium text-mauve-11 tracking-tight whitespace-nowrap ${numeric ? 'text-right' : 'text-left'}`}>
     {children}
   </th>
 )
@@ -399,7 +399,7 @@ const Td: React.FC<{
   <td
     colSpan={colSpan}
     title={title}
-    className={`px-3 py-2 text-zinc-700 whitespace-nowrap ${mono ? 'font-mono text-[12px] text-zinc-900' : ''} ${numeric ? 'text-right tabular-nums' : ''} ${className || ''}`}
+    className={`px-3 py-2 text-mauve-12 whitespace-nowrap ${mono ? 'font-mono text-[12px] text-mauve-12' : ''} ${numeric ? 'text-right tabular-nums' : ''} ${className || ''}`}
   >
     {children}
   </td>
@@ -415,7 +415,7 @@ const Pagination: React.FC<PaginationProps> = ({ page, totalPages, rows, onChang
   const from = (page - 1) * PAGE_SIZE + 1
   const to = Math.min(page * PAGE_SIZE, rows)
   return (
-    <div className="flex items-center justify-between text-[12px] text-zinc-500">
+    <div className="flex items-center justify-between text-[12px] text-mauve-11">
       <div className="font-mono tabular-nums">{from}–{to} of {rows.toLocaleString()}</div>
       <div className="flex items-center gap-1">
         <PageBtn disabled={page <= 1} onClick={() => onChange(1)}>First</PageBtn>
@@ -436,16 +436,16 @@ const PageBtn: React.FC<{
   <button
     disabled={disabled}
     onClick={onClick}
-    className="px-2.5 py-1 text-[12px] font-medium border border-zinc-200 rounded-md hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+    className="px-2.5 py-1 text-[12px] font-medium border border-mauve-6 rounded-md hover:bg-mauve-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
   >
     {children}
   </button>
 )
 
 const SideBySidePlaceholder: React.FC = () => (
-  <div className="bg-white border border-zinc-200 rounded-lg p-12 text-center">
-    <h3 className="text-[15px] font-semibold text-zinc-900 tracking-tight">Side-by-side diff</h3>
-    <p className="text-[13px] text-zinc-500 mt-2 max-w-lg mx-auto">
+  <div className="bg-white border border-mauve-6 rounded-lg p-12 text-center">
+    <h3 className="text-[15px] font-semibold text-mauve-12 tracking-tight">Side-by-side diff</h3>
+    <p className="text-[13px] text-mauve-11 mt-2 max-w-lg mx-auto">
       Coming next — render Wabtec and M2M side-by-side on the same row with mismatched fields highlighted inline.
       Currently the two separate tabs already stay row-aligned by PO + line.
     </p>

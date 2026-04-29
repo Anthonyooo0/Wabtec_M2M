@@ -24,9 +24,9 @@ const StatusPill: React.FC<{ status: string }> = ({ status }) => {
     lower.startsWith('open') ? 'bg-green-500'
     : lower.startsWith('hold') ? 'bg-amber-500'
     : lower.startsWith('cancel') ? 'bg-red-500'
-    : 'bg-zinc-400'
+    : 'bg-mauve-9'
   return (
-    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-zinc-200 bg-white text-[10px] font-medium text-zinc-700">
+    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-mauve-6 bg-white text-[10px] font-medium text-mauve-12">
       <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
       {status}
     </span>
@@ -43,17 +43,17 @@ const Stat: React.FC<{ label: string; value: number; sublabel?: string; tone?: '
   const dot =
     tone === 'critical' ? 'bg-red-500'
     : tone === 'success' ? 'bg-green-500'
-    : 'bg-zinc-300'
+    : 'bg-mauve-7'
   return (
-    <div className="bg-white border border-zinc-200 rounded-lg p-5">
+    <div className="bg-white border border-mauve-6 rounded-lg p-5">
       <div className="flex items-center gap-2 mb-2">
         <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
-        <span className="text-[11px] font-medium text-zinc-500 tracking-tight">{label}</span>
+        <span className="text-[11px] font-medium text-mauve-11 tracking-tight">{label}</span>
       </div>
-      <div className="text-3xl font-semibold text-zinc-900 tabular-nums tracking-tight">
+      <div className="text-3xl font-semibold text-mauve-12 tabular-nums tracking-tight">
         {value.toLocaleString()}
       </div>
-      {sublabel && <div className="text-[11px] text-zinc-500 mt-1">{sublabel}</div>}
+      {sublabel && <div className="text-[11px] text-mauve-11 mt-1">{sublabel}</div>}
     </div>
   )
 }
@@ -121,8 +121,8 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
     return (
       <div className="flex items-center justify-center py-32">
         <div className="text-center">
-          <div className="w-5 h-5 mx-auto border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin" />
-          <p className="mt-3 text-zinc-500 text-xs tracking-tight">Loading orphans</p>
+          <div className="w-5 h-5 mx-auto border-2 border-mauve-6 border-t-mac-navy rounded-full animate-spin" />
+          <p className="mt-3 text-mauve-11 text-xs tracking-tight">Loading orphans</p>
         </div>
       </div>
     )
@@ -133,9 +133,9 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
       <div className="bg-white border border-red-200 rounded-lg p-5">
         <div className="flex items-center gap-2 mb-1">
           <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-          <h3 className="text-sm font-semibold text-zinc-900">Failed to load orphans</h3>
+          <h3 className="text-sm font-semibold text-mauve-12">Failed to load orphans</h3>
         </div>
-        <p className="text-xs text-zinc-600 font-mono mt-2 leading-relaxed">{error}</p>
+        <p className="text-xs text-mauve-11 font-mono mt-2 leading-relaxed">{error}</p>
       </div>
     )
   }
@@ -144,8 +144,8 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
     <div className="space-y-6">
       {/* Header — title + thin context line. Replaces the prior blue banner. */}
       <div>
-        <h1 className="text-[22px] font-semibold text-zinc-900 tracking-tight">M2M Orphans</h1>
-        <p className="text-[13px] text-zinc-500 mt-1 leading-relaxed max-w-3xl">
+        <h1 className="text-[22px] font-semibold text-mauve-12 tracking-tight">M2M Orphans</h1>
+        <p className="text-[13px] text-mauve-11 mt-1 leading-relaxed max-w-3xl">
           Open WTS sales orders (FPRODCL 04 or 40) whose customer PO does not appear in the SCC scrape.
           Some entries belong on a different SCC instance we don&apos;t yet have credentials for —
           use this list to triage which subgroups need separate scrapers.
@@ -160,25 +160,25 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
       </div>
 
       {/* Card containing toolbar + table */}
-      <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden">
+      <div className="bg-white border border-mauve-6 rounded-lg overflow-hidden">
         {/* Toolbar */}
-        <div className="px-4 py-3 border-b border-zinc-200 flex items-center justify-between gap-3 flex-wrap">
+        <div className="px-4 py-3 border-b border-mauve-6 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] font-medium text-zinc-500 tabular-nums">
-              {filtered.length.toLocaleString()} <span className="text-zinc-400">of {orphans.length.toLocaleString()}</span>
+            <span className="text-[11px] font-medium text-mauve-11 tabular-nums">
+              {filtered.length.toLocaleString()} <span className="text-mauve-9">of {orphans.length.toLocaleString()}</span>
             </span>
-            <div className="w-px h-4 bg-zinc-200 mx-1" />
+            <div className="w-px h-4 bg-mauve-4 mx-1" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search PO, SO, customer, part…"
-              className="px-3 py-1.5 text-[13px] border border-zinc-200 rounded-md bg-zinc-50 hover:bg-white focus:bg-white focus:border-zinc-400 focus:ring-0 outline-none w-72 transition-colors placeholder:text-zinc-400"
+              className="px-3 py-1.5 text-[13px] border border-mauve-6 rounded-md bg-mauve-2 hover:bg-white focus:bg-white focus:border-mauve-8 focus:ring-0 outline-none w-72 transition-colors placeholder:text-mauve-9"
             />
             <select
               value={customerFilter}
               onChange={(e) => setCustomerFilter(e.target.value)}
-              className="px-3 py-1.5 text-[13px] border border-zinc-200 rounded-md bg-zinc-50 hover:bg-white focus:bg-white focus:border-zinc-400 focus:ring-0 outline-none max-w-[260px] transition-colors"
+              className="px-3 py-1.5 text-[13px] border border-mauve-6 rounded-md bg-mauve-2 hover:bg-white focus:bg-white focus:border-mauve-8 focus:ring-0 outline-none max-w-[260px] transition-colors"
             >
               <option value="all">All customers ({customers.length})</option>
               {customers.map((c) => (
@@ -188,7 +188,7 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
           </div>
           <button
             onClick={handleExportCSV}
-            className="px-3 py-1.5 text-[12px] font-medium text-zinc-100 bg-zinc-900 hover:bg-zinc-800 rounded-md transition-colors inline-flex items-center gap-1.5"
+            className="px-3 py-1.5 text-[12px] font-medium text-mauve-1 bg-mac-navy hover:bg-mac-blue rounded-md transition-colors inline-flex items-center gap-1.5"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
@@ -201,16 +201,16 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
-              <tr className="border-b border-zinc-200 bg-zinc-50/50">
-                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-zinc-500 tracking-wide">Wabtec PO</th>
-                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-zinc-500 tracking-wide">M2M SO</th>
-                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-zinc-500 tracking-wide">Status</th>
-                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-zinc-500 tracking-wide">Customer</th>
-                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-zinc-500 tracking-wide">Ordered</th>
-                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-zinc-500 tracking-wide">First item</th>
-                <th className="text-right px-4 py-2.5 text-[11px] font-medium text-zinc-500 tracking-wide tabular-nums">Lines</th>
-                <th className="text-right px-4 py-2.5 text-[11px] font-medium text-zinc-500 tracking-wide tabular-nums">Qty</th>
-                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-zinc-500 tracking-wide">Promise</th>
+              <tr className="border-b border-mauve-6 bg-mauve-3/50">
+                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide">Wabtec PO</th>
+                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide">M2M SO</th>
+                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide">Status</th>
+                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide">Customer</th>
+                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide">Ordered</th>
+                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide">First item</th>
+                <th className="text-right px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide tabular-nums">Lines</th>
+                <th className="text-right px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide tabular-nums">Qty</th>
+                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide">Promise</th>
               </tr>
             </thead>
             <tbody>
@@ -221,47 +221,47 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
                   <React.Fragment key={key}>
                     <tr
                       onClick={() => setExpanded(isOpen ? null : key)}
-                      className="border-t border-zinc-100 hover:bg-zinc-50/60 cursor-pointer transition-colors"
+                      className="border-t border-mauve-4 hover:bg-mauve-3/60 cursor-pointer transition-colors"
                     >
-                      <td className="px-4 py-2.5 font-mono text-[12px] text-zinc-900">{o.wabtecPo}</td>
-                      <td className="px-4 py-2.5 font-mono text-[12px] text-zinc-700">{o.macSo}</td>
+                      <td className="px-4 py-2.5 font-mono text-[12px] text-mauve-12">{o.wabtecPo}</td>
+                      <td className="px-4 py-2.5 font-mono text-[12px] text-mauve-12">{o.macSo}</td>
                       <td className="px-4 py-2.5"><StatusPill status={o.soStatus} /></td>
-                      <td className="px-4 py-2.5 text-zinc-700 max-w-[220px] truncate" title={o.customerName}>{o.customerName}</td>
-                      <td className="px-4 py-2.5 text-zinc-500 tabular-nums">{fmtDate(o.orderDate)}</td>
+                      <td className="px-4 py-2.5 text-mauve-12 max-w-[220px] truncate" title={o.customerName}>{o.customerName}</td>
+                      <td className="px-4 py-2.5 text-mauve-11 tabular-nums">{fmtDate(o.orderDate)}</td>
                       <td className="px-4 py-2.5 max-w-[220px] truncate" title={`${o.item} — ${o.itemDesc}`}>
-                        <span className="font-mono text-[12px] text-zinc-700">{o.item}</span>
+                        <span className="font-mono text-[12px] text-mauve-12">{o.item}</span>
                       </td>
-                      <td className="px-4 py-2.5 text-right text-zinc-700 tabular-nums">{o.lineCount}</td>
-                      <td className="px-4 py-2.5 text-right text-zinc-700 tabular-nums">{o.totalQty.toLocaleString()}</td>
-                      <td className="px-4 py-2.5 text-zinc-500 tabular-nums">{fmtDate(o.promiseDate)}</td>
+                      <td className="px-4 py-2.5 text-right text-mauve-12 tabular-nums">{o.lineCount}</td>
+                      <td className="px-4 py-2.5 text-right text-mauve-12 tabular-nums">{o.totalQty.toLocaleString()}</td>
+                      <td className="px-4 py-2.5 text-mauve-11 tabular-nums">{fmtDate(o.promiseDate)}</td>
                     </tr>
                     {isOpen && o.lineItems.length > 0 && (
-                      <tr className="bg-zinc-50">
-                        <td colSpan={9} className="px-8 py-4 border-t border-zinc-100">
-                          <div className="text-[10px] font-medium text-zinc-500 tracking-wide uppercase mb-2">
+                      <tr className="bg-mauve-2">
+                        <td colSpan={9} className="px-8 py-4 border-t border-mauve-4">
+                          <div className="text-[10px] font-medium text-mauve-11 tracking-wide uppercase mb-2">
                             All {o.lineItems.length} line item{o.lineItems.length !== 1 ? 's' : ''} on SO {o.macSo}
                           </div>
-                          <div className="rounded-md border border-zinc-200 bg-white overflow-hidden">
+                          <div className="rounded-md border border-mauve-6 bg-white overflow-hidden">
                             <table className="w-full text-[12px]">
-                              <thead className="bg-zinc-50/50">
-                                <tr className="border-b border-zinc-200">
-                                  <th className="text-left py-2 px-3 text-[10px] font-medium text-zinc-500 tracking-wide">Line</th>
-                                  <th className="text-left py-2 px-3 text-[10px] font-medium text-zinc-500 tracking-wide">Part</th>
-                                  <th className="text-left py-2 px-3 text-[10px] font-medium text-zinc-500 tracking-wide">Description</th>
-                                  <th className="text-right py-2 px-3 text-[10px] font-medium text-zinc-500 tracking-wide tabular-nums">Qty</th>
-                                  <th className="text-left py-2 px-3 text-[10px] font-medium text-zinc-500 tracking-wide">Promise</th>
-                                  <th className="text-left py-2 px-3 text-[10px] font-medium text-zinc-500 tracking-wide">Status</th>
+                              <thead className="bg-mauve-3/50">
+                                <tr className="border-b border-mauve-6">
+                                  <th className="text-left py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide">Line</th>
+                                  <th className="text-left py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide">Part</th>
+                                  <th className="text-left py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide">Description</th>
+                                  <th className="text-right py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide tabular-nums">Qty</th>
+                                  <th className="text-left py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide">Promise</th>
+                                  <th className="text-left py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide">Status</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {o.lineItems.map((li, i) => (
-                                  <tr key={i} className="border-t border-zinc-100">
-                                    <td className="py-1.5 px-3 font-mono text-zinc-600">{li.lineNo}</td>
-                                    <td className="py-1.5 px-3 font-mono text-zinc-900">{li.item}</td>
-                                    <td className="py-1.5 px-3 text-zinc-700">{li.itemDesc}</td>
-                                    <td className="py-1.5 px-3 text-right text-zinc-700 tabular-nums">{li.totalQty.toLocaleString()}</td>
-                                    <td className="py-1.5 px-3 text-zinc-500 tabular-nums">{fmtDate(li.promiseDate)}</td>
-                                    <td className="py-1.5 px-3 text-zinc-500">{li.lineStatus || '—'}</td>
+                                  <tr key={i} className="border-t border-mauve-4">
+                                    <td className="py-1.5 px-3 font-mono text-mauve-11">{li.lineNo}</td>
+                                    <td className="py-1.5 px-3 font-mono text-mauve-12">{li.item}</td>
+                                    <td className="py-1.5 px-3 text-mauve-12">{li.itemDesc}</td>
+                                    <td className="py-1.5 px-3 text-right text-mauve-12 tabular-nums">{li.totalQty.toLocaleString()}</td>
+                                    <td className="py-1.5 px-3 text-mauve-11 tabular-nums">{fmtDate(li.promiseDate)}</td>
+                                    <td className="py-1.5 px-3 text-mauve-11">{li.lineStatus || '—'}</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -276,11 +276,11 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={9} className="px-4 py-12 text-center">
-                    <div className="text-[13px] text-zinc-500">No orphans match your filters.</div>
+                    <div className="text-[13px] text-mauve-11">No orphans match your filters.</div>
                     {(search || customerFilter !== 'all') && (
                       <button
                         onClick={() => { setSearch(''); setCustomerFilter('all') }}
-                        className="text-[12px] text-zinc-700 hover:text-zinc-900 underline mt-1"
+                        className="text-[12px] text-mauve-12 hover:text-mauve-12 underline mt-1"
                       >
                         Clear filters
                       </button>
