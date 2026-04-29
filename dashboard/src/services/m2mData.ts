@@ -80,6 +80,74 @@ export async function loadM2MPOs(
   return data.rows || []
 }
 
+// Open M2M Wabtec sales orders (FPRODCL='04') whose customer PO does NOT
+// appear in the SCC scrape. Backed by the wabtec-m2m-orphans Azure Function.
+// Used by the M2M Orphans tab — kept separate from the main diff because
+// some of these are expected to live in a different SCC instance (e.g.
+// Wabtec Global Services, Progress Rail) until we have credentials.
+export interface M2MOrphan {
+  wabtecPo: string
+  macSo: string
+  soStatus: string
+  cancelledDate: string | null
+  closedDate: string | null
+  orderDate: string | null
+  customerNo: string
+  customerName: string
+  lineNo: string
+  item: string
+  itemDesc: string
+  totalQty: number
+  prodClass: string
+  promiseDate: string | null
+  lineStatus: string | null
+  lineCount: number
+  lineItems: Array<{
+    lineNo: string
+    item: string
+    itemDesc: string
+    totalQty: number
+    promiseDate: string | null
+    lineStatus: string | null
+  }>
+}
+
+interface M2MOrphansResponse {
+  orphans: M2MOrphan[]
+  totalM2MWabtec: number
+  matchedToScc: number
+  orphanCount: number
+  includeClosed: boolean
+  generatedAt: string
+}
+
+export async function loadM2MOrphans(
+  knownSccPos: string[],
+  includeClosed = false,
+): Promise<M2MOrphansResponse> {
+  if (!API_BASE) {
+    throw new Error('VITE_M2M_API_BASE not set — copy .env.example to .env and fill in values.')
+  }
+  const unique = [...new Set(knownSccPos.map((p) => p.trim()).filter(Boolean))]
+  if (unique.length === 0) {
+    return { orphans: [], totalM2MWabtec: 0, matchedToScc: 0, orphanCount: 0, includeClosed, generatedAt: new Date().toISOString() }
+  }
+
+  const url = new URL(`${API_BASE}/wabtec-m2m-orphans`)
+  if (FUNCTION_KEY) url.searchParams.set('code', FUNCTION_KEY)
+
+  const res = await fetch(url.toString(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ knownSccPos: unique, includeClosed }),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`M2M orphans fetch failed: ${res.status} ${text}`)
+  }
+  return (await res.json()) as M2MOrphansResponse
+}
+
 // Convert a MM-DD-YYYY string (from the Wabtec CSV) to an ISO date
 // so we can compare M2M and SCC dates with === on ISO prefixes.
 function mmddyyyyToIso(mmddyyyy: string): string | null {

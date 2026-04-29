@@ -26,6 +26,7 @@ const navItems: { id: ViewMode; label: string; Icon: React.FC<{ className?: stri
   { id: 'discrepancies', label: 'Discrepancies', Icon: AlertIcon },
   { id: 'awaiting-acceptance', label: 'PO Awaiting Acceptance', Icon: HourglassIcon },
   { id: 'po-history', label: 'PO History', Icon: SearchIcon },
+  { id: 'm2m-orphans', label: 'M2M Orphans', Icon: AlertIcon },
   { id: 'changelog', label: 'Audit Log', Icon: HistoryIcon },
 ]
 

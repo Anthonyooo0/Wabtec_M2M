@@ -8,8 +8,9 @@ import { Comparison } from './views/Comparison'
 import { Discrepancies } from './views/Discrepancies'
 import { PoAwaitingAcceptance } from './views/PoAwaitingAcceptance'
 import { PoHistory } from './views/PoHistory'
+import { M2MOrphans } from './views/M2MOrphans'
 import { loadWabtecPOs, type WabtecPO } from './services/wabtecData'
-import { loadM2MPOs, diff, isDiscrepancy, type M2MPO, type Discrepancy } from './services/m2mData'
+import { loadM2MPOs, loadM2MOrphans, diff, isDiscrepancy, type M2MPO, type M2MOrphan, type Discrepancy } from './services/m2mData'
 import { loadPoHistory, buildAcceptedDateIndex } from './services/poHistoryData'
 import { PoCollaborationProvider } from './contexts/PoCollaborationContext'
 import { PoCollaborationDrawer } from './components/PoCollaborationDrawer'
@@ -29,6 +30,9 @@ const App: React.FC = () => {
   const [m2m, setM2m] = useState<M2MPO[]>([])
   const [discrepancies, setDiscrepancies] = useState<Discrepancy[]>([])
   const [acceptedDateByPo, setAcceptedDateByPo] = useState<Map<string, Date>>(new Map())
+  const [orphans, setOrphans] = useState<M2MOrphan[]>([])
+  const [orphanStats, setOrphanStats] = useState<{ totalM2MWabtec: number; matchedToScc: number }>({ totalM2MWabtec: 0, matchedToScc: 0 })
+  const [orphansError, setOrphansError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastSync, setLastSync] = useState<string | null>(null)
@@ -69,6 +73,19 @@ const App: React.FC = () => {
       setM2m(m)
       setDiscrepancies(diff(w, m, acceptedIdx))
       setLastSync(new Date().toLocaleString())
+
+      // Orphans — non-fatal: a failure here only disables the M2M Orphans tab,
+      // doesn't break the main diff. Runs after the main load so we already
+      // have the SCC PO list ready as input.
+      setOrphansError(null)
+      loadM2MOrphans(uniquePos)
+        .then((res) => {
+          setOrphans(res.orphans)
+          setOrphanStats({ totalM2MWabtec: res.totalM2MWabtec, matchedToScc: res.matchedToScc })
+        })
+        .catch((e) => {
+          setOrphansError(e instanceof Error ? e.message : String(e))
+        })
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       setError(msg)
@@ -110,7 +127,9 @@ const App: React.FC = () => {
             ? 'POs Awaiting Acceptance'
             : currentView === 'po-history'
               ? 'PO History'
-              : 'Audit Log'
+              : currentView === 'm2m-orphans'
+                ? 'M2M Orphans (Not in SCC)'
+                : 'Audit Log'
 
   return (
     <PoCollaborationProvider>
@@ -162,6 +181,15 @@ const App: React.FC = () => {
             <PoAwaitingAcceptance items={discrepancies} loading={loading} error={error} />
           )}
           {currentView === 'po-history' && <PoHistory />}
+          {currentView === 'm2m-orphans' && (
+            <M2MOrphans
+              orphans={orphans}
+              totalM2MWabtec={orphanStats.totalM2MWabtec}
+              matchedToScc={orphanStats.matchedToScc}
+              loading={loading}
+              error={orphansError}
+            />
+          )}
           {currentView === 'changelog' && (
             <Placeholder
               title="Audit Log"

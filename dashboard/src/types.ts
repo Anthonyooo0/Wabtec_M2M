@@ -1,4 +1,4 @@
-export type ViewMode = 'dashboard' | 'comparison' | 'discrepancies' | 'awaiting-acceptance' | 'po-history' | 'changelog';
+export type ViewMode = 'dashboard' | 'comparison' | 'discrepancies' | 'awaiting-acceptance' | 'po-history' | 'm2m-orphans' | 'changelog';
 
 export interface NavItem {
   id: ViewMode;
