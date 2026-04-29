@@ -28,25 +28,34 @@
       }
     </script>
     <style>
-      body { font-family: 'DM Sans', system-ui, sans-serif; }
-      .sidebar {
-        background: linear-gradient(180deg, #1a365d 0%, #1e3a5f 100%);
+      body {
+        font-family: 'DM Sans', system-ui, sans-serif;
+        font-feature-settings: 'cv11', 'ss01';
+        letter-spacing: -0.005em;
       }
+      /* Vercel-style sidebar: solid near-black, hairline right edge */
+      .sidebar {
+        background: #09090b;
+        border-right: 1px solid #18181b;
+      }
+      /* Active nav: subtle bg + thin left accent (white, not bright blue) */
       .nav-active { position: relative; }
       .nav-active::before {
         content: '';
         position: absolute;
         left: 0; top: 50%;
         transform: translateY(-50%);
-        width: 3px; height: 60%;
-        background: #3b82f6;
-        border-radius: 0 4px 4px 0;
+        width: 2px; height: 60%;
+        background: #fafafa;
+        border-radius: 0 2px 2px 0;
       }
+      /* Numerics align across rows */
+      table, .tabular { font-variant-numeric: tabular-nums; }
       @keyframes fadeSlide {
-        from { opacity: 0; transform: translateY(8px); }
+        from { opacity: 0; transform: translateY(4px); }
         to { opacity: 1; transform: translateY(0); }
       }
-      .view-transition { animation: fadeSlide 0.3s ease-out; }
+      .view-transition { animation: fadeSlide 0.2s ease-out; }
     </style>
   </head>
   <body>

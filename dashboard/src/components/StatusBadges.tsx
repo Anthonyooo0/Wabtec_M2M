@@ -1,78 +1,52 @@
 import React from 'react'
 import type { M2MPO } from '../services/m2mData'
 
+// Vercel-style pill: white bg, hairline border, tiny colored dot prefix.
+// `lg` keeps the same dot but increases padding/font for hero placements.
+const Pill: React.FC<{
+  label: string
+  dot: string
+  size: 'sm' | 'lg'
+}> = ({ label, dot, size }) => {
+  const sizeClasses =
+    size === 'lg'
+      ? 'px-3 py-1 text-[12px]'
+      : 'px-2 py-0.5 text-[10px]'
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white text-zinc-700 font-medium ${sizeClasses}`}
+    >
+      <span className={`${size === 'lg' ? 'w-2 h-2' : 'w-1.5 h-1.5'} rounded-full ${dot}`} />
+      {label}
+    </span>
+  )
+}
+
 export const SCCStatusBadge: React.FC<{ action: string; size?: 'sm' | 'lg' }> = ({
   action,
   size = 'sm',
 }) => {
   const raw = (action || '').trim()
-  if (!raw) return <span className="text-slate-400 text-xs">—</span>
+  if (!raw) return <span className="text-zinc-400 text-[12px]">—</span>
 
   const lower = raw.toLowerCase()
-  let bg = 'bg-slate-100', text = 'text-slate-600', border = 'border-slate-200'
+  let dot = 'bg-zinc-400'
+  if (/cancel|reject/.test(lower)) dot = 'bg-red-500'
+  else if (/closed/.test(lower)) dot = 'bg-zinc-400'
+  else if (/accept|approv/.test(lower)) dot = 'bg-green-500'
+  else if (/pend|await/.test(lower)) dot = 'bg-blue-500'
+  else if (/late|bad/.test(lower)) dot = 'bg-amber-500'
 
-  if (/cancel/.test(lower)) {
-    bg = 'bg-red-50'; text = 'text-red-600'; border = 'border-red-200'
-  } else if (/reject/.test(lower)) {
-    bg = 'bg-red-50'; text = 'text-red-600'; border = 'border-red-200'
-  } else if (/closed/.test(lower)) {
-    bg = 'bg-slate-100'; text = 'text-slate-600'; border = 'border-slate-200'
-  } else if (/accept|approv/.test(lower)) {
-    bg = 'bg-green-50'; text = 'text-green-600'; border = 'border-green-200'
-  } else if (/pend|await/.test(lower)) {
-    bg = 'bg-blue-50'; text = 'text-blue-600'; border = 'border-blue-200'
-  } else if (/late|bad/.test(lower)) {
-    bg = 'bg-orange-50'; text = 'text-orange-600'; border = 'border-orange-200'
-  }
-
-  const sizeClasses =
-    size === 'lg'
-      ? 'px-4 py-1.5 text-sm'
-      : 'px-2 py-0.5 text-[10px]'
-
-  return (
-    <span
-      className={`${sizeClasses} rounded font-bold uppercase border ${bg} ${text} ${border}`}
-    >
-      {raw}
-    </span>
-  )
+  return <Pill label={raw} dot={dot} size={size} />
 }
 
 export const M2MStateBadge: React.FC<{ row: M2MPO; size?: 'sm' | 'lg' }> = ({
   row,
   size = 'sm',
 }) => {
-  const sizeClasses =
-    size === 'lg'
-      ? 'px-4 py-1.5 text-sm'
-      : 'px-2 py-0.5 text-[10px]'
-
-  if (row.cancelledDate) {
-    return (
-      <span
-        className={`${sizeClasses} rounded font-bold uppercase border bg-red-50 text-red-600 border-red-200`}
-      >
-        Cancelled
-      </span>
-    )
-  }
-  if (row.closedDate) {
-    return (
-      <span
-        className={`${sizeClasses} rounded font-bold uppercase border bg-slate-100 text-slate-600 border-slate-200`}
-      >
-        Closed
-      </span>
-    )
-  }
-  return (
-    <span
-      className={`${sizeClasses} rounded font-bold uppercase border bg-blue-50 text-blue-600 border-blue-200`}
-    >
-      Active
-    </span>
-  )
+  if (row.cancelledDate) return <Pill label="Cancelled" dot="bg-red-500" size={size} />
+  if (row.closedDate) return <Pill label="Closed" dot="bg-zinc-400" size={size} />
+  return <Pill label="Active" dot="bg-blue-500" size={size} />
 }
 
 export const fmtIsoDate = (iso: string | null): string => {

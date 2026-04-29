@@ -40,27 +40,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   return (
     <aside
-      className={`sidebar flex flex-col transition-all duration-300 flex-shrink-0 text-white ${
-        collapsed ? 'w-20' : 'w-64'
+      className={`sidebar flex flex-col transition-[width] duration-200 flex-shrink-0 text-zinc-300 ${
+        collapsed ? 'w-16' : 'w-60'
       }`}
     >
-      <div className="p-4 border-b border-white/10">
+      {/* Brand block */}
+      <div className="px-4 py-4 border-b border-zinc-800">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
-            <img src="/mac_logo.png" alt="MAC Logo" className="w-full h-full object-contain" />
+          <div className="w-7 h-7 flex items-center justify-center flex-shrink-0 bg-white rounded-md p-1">
+            <img src="/mac_logo.png" alt="MAC" className="w-full h-full object-contain" />
           </div>
           {!collapsed && (
             <div className="overflow-hidden">
-              <h1 className="font-bold text-sm truncate uppercase">WABTEC SCC PORTAL</h1>
-              <p className="text-blue-200 text-[10px] truncate uppercase font-bold tracking-tighter">
-                {currentUser}
-              </p>
+              <h1 className="font-semibold text-[13px] truncate text-white tracking-tight">Wabtec SCC</h1>
+              <p className="text-zinc-500 text-[11px] truncate">{currentUser}</p>
             </div>
           )}
         </div>
       </div>
 
-      <nav className="flex-1 py-4 overflow-y-auto">
+      {/* Nav */}
+      <nav className="flex-1 py-2 overflow-y-auto">
         {navItems.map(({ id, label, Icon }) => {
           const isActive = currentView === id
           return (
@@ -68,35 +68,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
               key={id}
               onClick={() => onViewChange(id)}
               title={collapsed ? label : undefined}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-all ${
+              className={`w-full flex items-center gap-3 px-4 py-2 text-[13px] transition-colors ${
                 isActive
-                  ? 'nav-active text-white bg-white/10'
-                  : 'text-blue-200 hover:text-white hover:bg-white/5'
+                  ? 'nav-active text-white bg-zinc-900'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
               }`}
             >
-              <Icon />
-              {!collapsed && <span className="font-medium">{label}</span>}
+              <Icon className="w-4 h-4 flex-shrink-0" />
+              {!collapsed && <span className="font-medium tracking-tight">{label}</span>}
             </button>
           )
         })}
       </nav>
 
-      <div className="p-4 border-t border-white/10 space-y-2">
+      {/* Footer */}
+      <div className="px-2 py-3 border-t border-zinc-800 space-y-1">
         <button
           onClick={onLogout}
-          title={collapsed ? 'Sign Out' : undefined}
-          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-blue-200 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+          title={collapsed ? 'Sign out' : undefined}
+          className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-zinc-400 hover:text-white hover:bg-zinc-900/60 rounded-md transition-colors"
         >
-          <LogoutIcon />
-          {!collapsed && <span className="font-medium">Sign Out</span>}
+          <LogoutIcon className="w-4 h-4 flex-shrink-0" />
+          {!collapsed && <span className="font-medium">Sign out</span>}
         </button>
 
         <button
           onClick={onToggleCollapse}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs text-blue-200 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+          className="w-full flex items-center justify-center gap-2 px-3 py-1.5 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
           title={collapsed ? 'Expand' : 'Collapse'}
         >
-          <ChevronLeftIcon className={`w-4 h-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
+          <ChevronLeftIcon className={`w-3.5 h-3.5 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
           {!collapsed && <span>Collapse</span>}
         </button>
       </div>

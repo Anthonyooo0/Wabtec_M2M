@@ -3,14 +3,12 @@ import { daysSinceCreation, type Discrepancy } from '../services/m2mData'
 import { PoLink } from '../components/PoLink'
 
 // Color the day-counter to escalate as a PO sits longer in SCC unaccepted.
-// Same thresholds the Discrepancies "missing in M2M" card uses, so the
-// signal is consistent across screens.
-const ageColor = (days: number | null): { text: string; bg: string; border: string } => {
-  if (days === null) return { text: 'text-slate-400', bg: 'bg-slate-50', border: 'border-slate-200' }
-  if (days >= 30) return { text: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' }
-  if (days >= 14) return { text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' }
-  if (days >= 5) return { text: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' }
-  return { text: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' }
+const ageTone = (days: number | null): { text: string; border: string } => {
+  if (days === null) return { text: 'text-zinc-400', border: 'border-zinc-200' }
+  if (days >= 30) return { text: 'text-red-600', border: 'border-red-200' }
+  if (days >= 14) return { text: 'text-amber-600', border: 'border-amber-200' }
+  if (days >= 5) return { text: 'text-yellow-600', border: 'border-yellow-200' }
+  return { text: 'text-zinc-700', border: 'border-zinc-200' }
 }
 
 interface Props {
@@ -19,10 +17,6 @@ interface Props {
   error: string | null
 }
 
-// Standalone view for POs that have never been accepted on Wabtec SCC
-// (still NEW / REVISED / REJECTED). They aren't a discrepancy — there's
-// nothing for M2M to match yet — so they live here, separated from the
-// real issues queue.
 export const PoAwaitingAcceptance: React.FC<Props> = ({ items, loading, error }) => {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -32,7 +26,6 @@ export const PoAwaitingAcceptance: React.FC<Props> = ({ items, loading, error })
     [items],
   )
 
-  // Distinct SCC statuses present in the data (NEW / REVISED / REJECTED / etc.)
   const statusOptions = useMemo(() => {
     const set = new Set<string>()
     for (const d of awaiting) {
@@ -58,65 +51,59 @@ export const PoAwaitingAcceptance: React.FC<Props> = ({ items, loading, error })
 
   if (loading) {
     return (
-      <div className="view-transition bg-white rounded-xl border border-slate-200 shadow-sm p-10 text-center text-slate-400">
-        Loading…
+      <div className="bg-white border border-zinc-200 rounded-lg p-12 text-center">
+        <div className="w-5 h-5 mx-auto border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin" />
+        <p className="mt-3 text-[12px] text-zinc-500">Loading</p>
       </div>
     )
   }
   if (error) {
     return (
-      <div className="view-transition bg-red-50 border border-red-200 rounded-xl p-5 text-red-700 text-sm">
+      <div className="bg-white border border-red-200 rounded-lg p-5 text-[13px] text-red-700">
         {error}
       </div>
     )
   }
 
   return (
-    <div className="view-transition space-y-4">
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h3 className="text-lg font-bold text-slate-800">
-              POs Awaiting Acceptance{' '}
-              <span className="ml-2 px-2 py-0.5 text-xs font-mono bg-amber-100 text-amber-800 rounded">
-                {awaiting.length.toLocaleString()}
-              </span>
-            </h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-              POs on Wabtec SCC that have never been accepted (still NEW, REVISED,
-              or REJECTED in their History tab). Nothing for M2M to match — these
-              are waiting on the Wabtec side, not a data discrepancy.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-mac-accent focus:ring-2 focus:ring-mac-accent/20 outline-none bg-white"
-            >
-              <option value="all">All statuses</option>
-              {statusOptions.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search PO, item, buyer…"
-              className="px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-mac-accent focus:ring-2 focus:ring-mac-accent/20 outline-none w-64"
-            />
-          </div>
+    <div className="space-y-5 view-transition">
+      <div>
+        <div className="flex items-center gap-2">
+          <h1 className="text-[22px] font-semibold text-zinc-900 tracking-tight">POs Awaiting Acceptance</h1>
+          <span className="px-1.5 py-0.5 text-[11px] font-mono bg-zinc-100 rounded text-zinc-600 tabular-nums">
+            {awaiting.length.toLocaleString()}
+          </span>
         </div>
+        <p className="text-[13px] text-zinc-500 mt-1 max-w-3xl">
+          POs on Wabtec SCC that have never been accepted (still NEW, REVISED, or REJECTED). Nothing for
+          M2M to match — these are waiting on the Wabtec side, not a data discrepancy.
+        </p>
+      </div>
+
+      <div className="bg-white border border-zinc-200 rounded-lg p-3 flex items-center justify-end gap-2 flex-wrap">
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-3 py-1.5 text-[13px] border border-zinc-200 rounded-md bg-zinc-50 hover:bg-white focus:bg-white focus:border-zinc-400 focus:ring-0 outline-none transition-colors"
+        >
+          <option value="all">All statuses</option>
+          {statusOptions.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search PO, item, buyer…"
+          className="px-3 py-1.5 text-[13px] border border-zinc-200 rounded-md bg-zinc-50 hover:bg-white focus:bg-white focus:border-zinc-400 focus:ring-0 outline-none w-72 transition-colors placeholder:text-zinc-400"
+        />
       </div>
 
       {awaiting.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-10 text-center">
-          <h3 className="font-bold text-slate-700 text-lg">Nothing awaiting acceptance</h3>
-          <p className="mt-2 text-slate-500 text-sm max-w-md mx-auto">
-            Every PO on Wabtec SCC has at least one ACCEPTED event in its
-            history.
+        <div className="bg-white border border-zinc-200 rounded-lg p-12 text-center">
+          <h3 className="text-[15px] font-semibold text-zinc-900 tracking-tight">Nothing awaiting acceptance</h3>
+          <p className="mt-2 text-[13px] text-zinc-500 max-w-md mx-auto">
+            Every PO on Wabtec SCC has at least one ACCEPTED event in its history.
           </p>
         </div>
       ) : (
@@ -124,18 +111,12 @@ export const PoAwaitingAcceptance: React.FC<Props> = ({ items, loading, error })
       )}
 
       {filtered.length === 0 && awaiting.length > 0 && (
-        <div className="text-center py-8 text-sm text-slate-500">
-          No POs match the current filter.
-        </div>
+        <div className="text-center py-8 text-[13px] text-zinc-500">No POs match the current filter.</div>
       )}
     </div>
   )
 }
 
-// Bucket discrepancies by SCC status. We special-case the three common
-// states (NEW / REVISED / REJECTED) so they always get a section in a
-// stable order, then dump anything else into "Other" — keeps the page
-// predictable but doesn't hide unexpected values.
 const StatusGroups: React.FC<{ items: Discrepancy[] }> = ({ items }) => {
   const buckets = useMemo(() => {
     const m: Record<string, Discrepancy[]> = { NEW: [], REVISED: [], REJECTED: [], Other: [] }
@@ -149,47 +130,30 @@ const StatusGroups: React.FC<{ items: Discrepancy[] }> = ({ items }) => {
     return m
   }, [items])
 
-  const sections: { key: string; title: string; accent: string; subtitle: string }[] = [
-    {
-      key: 'NEW',
-      title: 'New',
-      accent: 'bg-blue-500',
-      subtitle: 'First sent by Wabtec, not yet acted on',
-    },
-    {
-      key: 'REVISED',
-      title: 'Revised',
-      accent: 'bg-orange-500',
-      subtitle: 'Wabtec changed the PO and is awaiting re-acceptance',
-    },
-    {
-      key: 'REJECTED',
-      title: 'Rejected',
-      accent: 'bg-red-500',
-      subtitle: 'Sent back to Wabtec — they need to fix and resend',
-    },
-    { key: 'Other', title: 'Other', accent: 'bg-slate-400', subtitle: 'Uncommon SCC statuses' },
+  const sections: { key: string; title: string; dot: string; subtitle: string }[] = [
+    { key: 'NEW', title: 'New', dot: 'bg-blue-500', subtitle: 'First sent by Wabtec, not yet acted on' },
+    { key: 'REVISED', title: 'Revised', dot: 'bg-amber-500', subtitle: 'Wabtec changed the PO and is awaiting re-acceptance' },
+    { key: 'REJECTED', title: 'Rejected', dot: 'bg-red-500', subtitle: 'Sent back to Wabtec — they need to fix and resend' },
+    { key: 'Other', title: 'Other', dot: 'bg-zinc-400', subtitle: 'Uncommon SCC statuses' },
   ]
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {sections.map((s) => {
         const rows = buckets[s.key]
         if (!rows || rows.length === 0) return null
         return (
           <section key={s.key}>
             <div className="flex items-center gap-3 mb-3">
-              <span className={`w-1 h-8 ${s.accent} rounded-sm`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
               <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  <h3 className="font-bold text-slate-800 text-lg uppercase tracking-wider">
-                    {s.title}
-                  </h3>
-                  <span className="px-2 py-0.5 text-xs font-mono bg-slate-100 rounded text-slate-600">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-[14px] font-semibold text-zinc-900 tracking-tight">{s.title}</h3>
+                  <span className="px-1.5 py-0.5 text-[11px] font-mono bg-zinc-100 rounded text-zinc-600 tabular-nums">
                     {rows.length.toLocaleString()}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 mt-0.5">{s.subtitle}</p>
+                <p className="text-[12px] text-zinc-500 mt-0.5">{s.subtitle}</p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -206,64 +170,52 @@ const StatusGroups: React.FC<{ items: Discrepancy[] }> = ({ items }) => {
 
 const AwaitingCard: React.FC<{ d: Discrepancy }> = ({ d }) => {
   const status = (d.wabtec.action || '').trim() || '—'
-  const statusClass =
-    /reject/i.test(status)
-      ? 'bg-red-50 text-red-700 border-red-200'
-      : /revis/i.test(status)
-        ? 'bg-orange-50 text-orange-700 border-orange-200'
-        : /new/i.test(status)
-          ? 'bg-blue-50 text-blue-700 border-blue-200'
-          : 'bg-slate-100 text-slate-700 border-slate-200'
+  const statusDot =
+    /reject/i.test(status) ? 'bg-red-500'
+    : /revis/i.test(status) ? 'bg-amber-500'
+    : /new/i.test(status) ? 'bg-blue-500'
+    : 'bg-zinc-400'
   const days = daysSinceCreation(d.wabtec.creationDate)
-  const age = ageColor(days)
+  const age = ageTone(days)
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
+    <div className="bg-white border border-zinc-200 rounded-md p-4">
       <div className="flex items-center justify-between mb-3">
-        <span className="font-mono text-xs font-bold text-slate-700">
+        <span className="font-mono text-[12px] text-zinc-900">
           PO <PoLink poNumber={d.wabtecPo} />
         </span>
-        <span className="text-slate-400 text-xs">Line {d.lineNo}</span>
+        <span className="text-zinc-400 text-[11px]">Line {d.lineNo}</span>
       </div>
       <div className="mb-3 flex items-center justify-between gap-2">
-        <span className={`px-2 py-0.5 text-[10px] font-bold uppercase border rounded ${statusClass}`}>
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-zinc-200 bg-white text-[10px] font-medium text-zinc-700">
+          <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`} />
           {status}
         </span>
-        <div className={`px-2 py-1 rounded border ${age.bg} ${age.border} text-right`}>
-          <div className={`text-lg font-bold leading-none tabular-nums ${age.text}`}>
+        <div className={`px-2 py-1 rounded-md border ${age.border} text-right`}>
+          <div className={`text-[18px] font-semibold leading-none tabular-nums tracking-tight ${age.text}`}>
             {days ?? '—'}
           </div>
-          <div className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 ${age.text}`}>
+          <div className="text-[9px] text-zinc-500 mt-0.5">
             day{days === 1 ? '' : 's'} in SCC
           </div>
         </div>
       </div>
-      <div className="text-xs text-slate-500 space-y-1">
-        <div className="flex justify-between">
-          <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Item</span>
-          <span className="font-mono text-slate-700">{d.item}</span>
-        </div>
+      <div className="text-[12px] space-y-1">
+        <Row label="Item" value={<span className="font-mono">{d.item}</span>} />
         {d.wabtec.itemDescription && (
-          <div className="flex justify-between gap-2">
-            <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Desc</span>
-            <span className="text-slate-700 truncate max-w-[60%]" title={d.wabtec.itemDescription}>
-              {d.wabtec.itemDescription}
-            </span>
-          </div>
+          <Row label="Desc" value={<span className="truncate max-w-[60%] inline-block" title={d.wabtec.itemDescription}>{d.wabtec.itemDescription}</span>} />
         )}
-        <div className="flex justify-between">
-          <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Qty</span>
-          <span className="tabular-nums text-slate-700">{d.wabtec.totalQuantity.toLocaleString()}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Buyer</span>
-          <span className="text-slate-700 truncate ml-2">{d.wabtec.buyerName || '—'}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Created</span>
-          <span className="text-slate-700">{d.wabtec.creationDate || '—'}</span>
-        </div>
+        <Row label="Qty" value={<span className="tabular-nums">{d.wabtec.totalQuantity.toLocaleString()}</span>} />
+        <Row label="Buyer" value={<span className="truncate ml-2">{d.wabtec.buyerName || '—'}</span>} />
+        <Row label="Created" value={d.wabtec.creationDate || '—'} />
       </div>
     </div>
   )
 }
+
+const Row: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
+  <div className="flex justify-between items-center">
+    <span className="text-[11px] text-zinc-500">{label}</span>
+    <span className="text-zinc-700">{value}</span>
+  </div>
+)

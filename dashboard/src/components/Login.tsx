@@ -29,25 +29,26 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-mac-light px-4">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-200">
+    <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
+      <div className="bg-white border border-zinc-200 rounded-lg w-full max-w-sm p-8">
         <div className="text-center mb-8">
-          <img src="/mac_logo.png" alt="MAC Logo" className="w-16 h-16 mx-auto mb-4 object-contain" />
-          <h1 className="text-2xl font-bold text-slate-800">Wabtec SCC Portal</h1>
-          <p className="text-slate-500 text-sm mt-1">Sign in with your MAC Products account</p>
+          <img src="/mac_logo.png" alt="MAC" className="w-12 h-12 mx-auto mb-4 object-contain" />
+          <h1 className="text-[18px] font-semibold text-zinc-900 tracking-tight">Wabtec SCC Portal</h1>
+          <p className="text-[13px] text-zinc-500 mt-1">Sign in with your MAC Products account</p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-xs">
-            {error}
+          <div className="mb-4 p-3 rounded-md bg-white border border-red-200 text-[12px] text-red-700 flex items-start gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
         <button
           onClick={handleSignIn}
-          className="w-full bg-[#2F2F2F] hover:bg-[#1F1F1F] text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-lg flex items-center justify-center gap-3"
+          className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-medium text-[13px] py-2.5 px-4 rounded-md transition-colors flex items-center justify-center gap-2.5"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 21 21">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 21 21">
             <rect x="1" y="1" width="9" height="9" fill="#f25022" />
             <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
             <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
@@ -59,15 +60,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         {import.meta.env.DEV && (
           <button
             onClick={() => onLogin('dev@macproducts.net')}
-            className="mt-3 w-full text-xs text-slate-400 hover:text-mac-accent py-2 border border-dashed border-slate-200 rounded-lg"
+            className="mt-3 w-full text-[11px] text-zinc-500 hover:text-zinc-700 py-2 border border-dashed border-zinc-200 rounded-md transition-colors"
           >
-            Dev bypass → continue as dev@macproducts.net
+            Dev bypass · dev@macproducts.net
           </button>
         )}
 
-        <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-          <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
-            MAC PRODUCTS INTERNAL SYSTEM
+        <div className="mt-8 pt-5 border-t border-zinc-100 text-center">
+          <p className="text-[10px] text-zinc-400 tracking-tight">
+            MAC Products internal system
           </p>
         </div>
       </div>

@@ -6,9 +6,6 @@ import {
 } from '../services/poHistoryData'
 import { PoLink } from '../components/PoLink'
 
-// Columns to surface prominently (in this order). We keep a stable, curated
-// column order rather than echoing the scraper's raw column array — the raw
-// list includes the empty-header checkbox column and a redundant PO Number.
 const PRIMARY_COLUMNS: { key: string; label: string; numeric?: boolean }[] = [
   { key: 'Revision number', label: 'Rev', numeric: true },
   { key: 'Change Type', label: 'Change Type' },
@@ -42,9 +39,7 @@ export const PoHistory: React.FC = () => {
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return [] as PoHistoryEntry[]
-    return entries
-      .filter((e) => e.poNumber.toLowerCase().includes(q))
-      .slice(0, 12)
+    return entries.filter((e) => e.poNumber.toLowerCase().includes(q)).slice(0, 12)
   }, [entries, query])
 
   const activeEntry = useMemo(() => {
@@ -52,8 +47,6 @@ export const PoHistory: React.FC = () => {
     return entries.find((e) => e.poNumber === selected) || null
   }, [entries, selected])
 
-  // Sort history rows newest-first by Updated time if parseable. Falls back
-  // to the scraper's original DOM order when the date can't be parsed.
   const sortedRows: PoHistoryRow[] = useMemo(() => {
     if (!activeEntry) return []
     const parse = (v: string): number => {
@@ -63,29 +56,26 @@ export const PoHistory: React.FC = () => {
       const t = new Date(`${yyyy}-${mm}-${dd}T00:00:00`).getTime()
       return Number.isFinite(t) ? t : 0
     }
-    return [...activeEntry.rows].sort((a, b) => parse(b['Updated time'] || '') - parse(a['Updated time'] || ''))
+    return [...activeEntry.rows].sort(
+      (a, b) => parse(b['Updated time'] || '') - parse(a['Updated time'] || ''),
+    )
   }, [activeEntry])
 
   return (
-    <div className="view-transition space-y-4">
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-          Search PO Number
-        </label>
+    <div className="space-y-4 view-transition">
+      <div className="bg-white border border-zinc-200 rounded-lg p-4">
+        <label className="block text-[11px] font-medium text-zinc-500 mb-2">Search PO number</label>
         <div className="relative">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="e.g. 174496878"
-            className="w-full px-4 py-3 pr-28 text-sm rounded-xl border border-slate-300 focus:border-mac-accent focus:ring-2 focus:ring-mac-accent/20 outline-none font-mono"
+            className="w-full px-3 py-2 pr-20 text-[13px] rounded-md border border-zinc-200 bg-zinc-50 hover:bg-white focus:bg-white focus:border-zinc-400 focus:ring-0 outline-none font-mono transition-colors placeholder:text-zinc-400"
           />
           {query && (
             <button
-              onClick={() => {
-                setQuery('')
-                setSelected(null)
-              }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-slate-700 font-medium"
+              onClick={() => { setQuery(''); setSelected(null) }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[12px] text-zinc-500 hover:text-zinc-900 font-medium px-2 py-0.5 hover:bg-zinc-100 rounded"
             >
               Clear
             </button>
@@ -93,17 +83,15 @@ export const PoHistory: React.FC = () => {
         </div>
 
         {query && matches.length > 0 && !selected && (
-          <div className="mt-3 border border-slate-200 rounded-lg max-h-72 overflow-y-auto divide-y divide-slate-100">
-            {matches.map((e) => (
+          <div className="mt-3 border border-zinc-200 rounded-md max-h-72 overflow-y-auto">
+            {matches.map((e, i) => (
               <button
                 key={e.poNumber}
                 onClick={() => setSelected(e.poNumber)}
-                className="w-full text-left px-4 py-2.5 hover:bg-slate-50 transition-colors flex items-center justify-between"
+                className={`w-full text-left px-3 py-2 hover:bg-zinc-50 transition-colors flex items-center justify-between ${i > 0 ? 'border-t border-zinc-100' : ''}`}
               >
-                <span className="font-mono text-sm font-medium text-slate-800">
-                  {e.poNumber}
-                </span>
-                <span className="text-[10px] font-mono text-slate-500 uppercase">
+                <span className="font-mono text-[13px] text-zinc-900">{e.poNumber}</span>
+                <span className="text-[11px] font-mono text-zinc-500 tabular-nums">
                   {e.historyRowCount} {e.historyRowCount === 1 ? 'revision' : 'revisions'}
                 </span>
               </button>
@@ -111,95 +99,90 @@ export const PoHistory: React.FC = () => {
           </div>
         )}
         {query && matches.length === 0 && !loading && (
-          <div className="mt-3 text-xs text-slate-500">
+          <div className="mt-3 text-[12px] text-zinc-500">
             No PO found. {entries.length.toLocaleString()} POs indexed.
           </div>
         )}
       </div>
 
       {loading && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-10 text-center text-slate-400">
-          Loading history…
+        <div className="bg-white border border-zinc-200 rounded-lg p-12 text-center">
+          <div className="w-5 h-5 mx-auto border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin" />
+          <p className="mt-3 text-[12px] text-zinc-500">Loading history</p>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-red-700 text-sm">
+        <div className="bg-white border border-red-200 rounded-lg p-5 text-[13px] text-red-700">
           {error}
         </div>
       )}
 
       {activeEntry && (
-        <>
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Selected PO
-                </div>
-                <div className="text-xl font-bold font-mono text-slate-800 mt-0.5">
-                  <PoLink poNumber={activeEntry.poNumber} chip />
-                </div>
-                <div className="text-xs text-slate-500 mt-1">
-                  {activeEntry.historyRowCount}{' '}
-                  {activeEntry.historyRowCount === 1 ? 'revision' : 'revisions'} · scraped{' '}
-                  {new Date(activeEntry.scrapedAt).toLocaleString()}
-                </div>
+        <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden">
+          <div className="px-5 py-3 border-b border-zinc-200 flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <div className="text-[11px] text-zinc-500">Selected PO</div>
+              <div className="text-[16px] font-mono text-zinc-900 mt-0.5">
+                <PoLink poNumber={activeEntry.poNumber} chip />
               </div>
-              <button
-                onClick={() => setSelected(null)}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
-              >
-                Back to search
-              </button>
+              <div className="text-[11px] text-zinc-500 mt-1">
+                <span className="tabular-nums">{activeEntry.historyRowCount}</span>{' '}
+                {activeEntry.historyRowCount === 1 ? 'revision' : 'revisions'}
+                {' · scraped '}
+                <span className="font-mono">{new Date(activeEntry.scrapedAt).toLocaleString()}</span>
+              </div>
             </div>
+            <button
+              onClick={() => setSelected(null)}
+              className="px-3 py-1.5 text-[12px] font-medium text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors"
+            >
+              Back to search
+            </button>
+          </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr className="text-left">
+          <div className="overflow-x-auto">
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="border-b border-zinc-200 bg-zinc-50/50">
+                  {PRIMARY_COLUMNS.map((c) => (
+                    <th
+                      key={c.key}
+                      className={`px-3 py-2.5 text-[11px] font-medium text-zinc-500 tracking-tight whitespace-nowrap ${c.numeric ? 'text-right' : 'text-left'}`}
+                    >
+                      {c.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {sortedRows.map((row, idx) => (
+                  <tr key={idx} className="border-t border-zinc-100 hover:bg-zinc-50/60">
                     {PRIMARY_COLUMNS.map((c) => (
-                      <th
-                        key={c.key}
-                        className={`px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap ${
-                          c.numeric ? 'text-right' : ''
-                        }`}
-                      >
-                        {c.label}
-                      </th>
+                      <Cell key={c.key} value={row[c.key]} col={c} />
                     ))}
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {sortedRows.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50">
-                      {PRIMARY_COLUMNS.map((c) => (
-                        <Cell key={c.key} value={row[c.key]} col={c} />
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </>
+        </div>
       )}
 
       {!activeEntry && !query && !loading && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-10 text-center">
-          <h3 className="font-bold text-slate-700 text-lg">Search a PO to see its history</h3>
-          <p className="mt-2 text-sm text-slate-500 max-w-lg mx-auto">
-            History is sourced from the Wabtec SCC "PO Details → History" tab
-            (scraped via Playwright). Shows every revision of a PO: who changed
-            what, when, and whether it was a core (pricing/quantity) or non-core
-            change.
+        <div className="bg-white border border-zinc-200 rounded-lg p-12 text-center">
+          <h3 className="text-[15px] font-semibold text-zinc-900 tracking-tight">
+            Search a PO to see its history
+          </h3>
+          <p className="mt-2 text-[13px] text-zinc-500 max-w-lg mx-auto">
+            Sourced from the Wabtec SCC "PO Details → History" tab. Shows every revision of a PO:
+            who changed what, when, and whether it was a core (pricing/quantity) or non-core change.
           </p>
-          <p className="mt-3 text-xs text-slate-400 font-mono">
+          <p className="mt-3 text-[11px] text-zinc-400 font-mono tabular-nums">
             {entries.length.toLocaleString()} POs indexed
           </p>
         </div>
       )}
-
     </div>
   )
 }
@@ -209,33 +192,32 @@ const Cell: React.FC<{
   col: { key: string; numeric?: boolean }
 }> = ({ value, col }) => {
   const v = value || ''
-  let display: React.ReactNode = v || <span className="text-slate-300">—</span>
+  let display: React.ReactNode = v || <span className="text-zinc-300">—</span>
 
-  // Color-code Type Of Change (CORE / NON-CORE / INITIAL) so a buyer can
-  // scan the column at a glance — CORE = pricing/qty/ship changes that
-  // affect M2M, NON-CORE = admin.
+  // Type Of Change pill — CORE = pricing/qty/ship (impacts M2M), NON-CORE = admin.
   if (col.key === 'Type Of Change' && v) {
     const kind = v.toUpperCase()
-    let cls = 'bg-slate-100 text-slate-600 border-slate-200'
-    if (kind === 'CORE') cls = 'bg-red-50 text-red-600 border-red-200'
-    else if (kind === 'INITIAL') cls = 'bg-blue-50 text-blue-600 border-blue-200'
-    else if (kind === 'NON-CORE') cls = 'bg-slate-100 text-slate-500 border-slate-200'
+    const dot =
+      kind === 'CORE' ? 'bg-red-500'
+      : kind === 'INITIAL' ? 'bg-blue-500'
+      : 'bg-zinc-400'
     display = (
-      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${cls}`}>
+      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-zinc-200 bg-white text-[10px] font-medium text-zinc-700">
+        <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
         {kind}
       </span>
     )
   }
 
   if (col.key === 'Change Type' && v) {
-    display = <span className="font-medium text-slate-800">{v}</span>
+    display = <span className="text-zinc-900">{v}</span>
   }
 
   return (
     <td
-      className={`px-4 py-2.5 text-slate-700 whitespace-nowrap ${
-        col.numeric ? 'text-right tabular-nums font-mono text-xs' : ''
-      } ${col.key === 'Updated time' ? 'font-mono text-xs' : ''}`}
+      className={`px-3 py-2 text-zinc-700 whitespace-nowrap ${
+        col.numeric ? 'text-right tabular-nums font-mono text-[12px]' : ''
+      } ${col.key === 'Updated time' ? 'font-mono text-[12px]' : ''}`}
     >
       {display}
     </td>

@@ -133,7 +133,7 @@ const App: React.FC = () => {
 
   return (
     <PoCollaborationProvider>
-    <div className="flex h-screen overflow-hidden bg-mac-light">
+    <div className="flex h-screen overflow-hidden bg-zinc-50">
       <Sidebar
         currentUser={currentUser}
         currentView={currentView}
@@ -144,16 +144,17 @@ const App: React.FC = () => {
       />
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-slate-800">{viewTitle}</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Cross-reference Wabtec SCC with Made2Manage to surface data discrepancies.
-            </p>
+        <header className="bg-white border-b border-zinc-200 px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h2 className="text-[15px] font-semibold text-zinc-900 tracking-tight">{viewTitle}</h2>
+            {lastSync && (
+              <>
+                <span className="w-px h-4 bg-zinc-200" />
+                <span className="text-[11px] text-zinc-500">Last sync · <span className="text-zinc-700 tabular-nums">{lastSync}</span></span>
+              </>
+            )}
           </div>
-          <span className="font-mono text-[10px] text-slate-400 uppercase tracking-widest font-bold">
-            {VERSION}
-          </span>
+          <span className="font-mono text-[10px] text-zinc-400 tracking-tight">{VERSION}</span>
         </header>
 
         <div className="flex-1 overflow-y-auto p-6">
@@ -207,9 +208,9 @@ const App: React.FC = () => {
 }
 
 const Placeholder: React.FC<{ title: string; body: string }> = ({ title, body }) => (
-  <div className="view-transition bg-white rounded-xl border border-slate-200 shadow-sm p-8">
-    <h3 className="font-bold text-slate-700 text-lg">{title}</h3>
-    <p className="mt-2 text-slate-500 text-sm max-w-2xl">{body}</p>
+  <div className="view-transition bg-white border border-zinc-200 rounded-lg p-8">
+    <h3 className="text-[15px] font-semibold text-zinc-900 tracking-tight">{title}</h3>
+    <p className="mt-2 text-[13px] text-zinc-500 max-w-2xl">{body}</p>
   </div>
 )
 

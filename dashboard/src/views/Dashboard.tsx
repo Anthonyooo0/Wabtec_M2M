@@ -10,43 +10,38 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ stats, onRefresh }) => {
   return (
     <div className="view-transition space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="TOTAL OPEN POs" value={stats.totalPOs} accent="border-l-mac-accent" />
-        <StatCard label="DISCREPANCIES" value={stats.discrepancies} accent="border-l-red-500" />
-        <StatCard label="LATE SHIPMENTS" value={stats.lateShipments} accent="border-l-orange-500" />
-        <StatCard
-          label="LAST SYNC"
-          value={stats.lastSync ?? '—'}
-          accent="border-l-slate-300"
-          valueClassName="text-sm font-mono"
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard label="Open POs" value={stats.totalPOs} tone="default" />
+        <StatCard label="Discrepancies" value={stats.discrepancies} tone="critical" />
+        <StatCard label="Late shipments" value={stats.lateShipments} tone="warning" />
+        <StatCard label="Last sync" value={stats.lastSync ?? '—'} tone="muted" smallValue />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b bg-slate-50 flex justify-between items-center">
-            <h3 className="font-bold text-slate-700 text-sm">Recent Activity</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-lg overflow-hidden">
+          <div className="px-5 py-3 border-b border-zinc-200 flex justify-between items-center">
+            <h3 className="text-[13px] font-semibold text-zinc-900 tracking-tight">Recent activity</h3>
             <button
               onClick={onRefresh}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-mac-accent hover:bg-blue-50 rounded-lg transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors"
             >
-              <RefreshIcon className="w-4 h-4" />
-              REFRESH
+              <RefreshIcon className="w-3.5 h-3.5" />
+              Refresh
             </button>
           </div>
-          <div className="p-8 text-center text-slate-400 text-sm">
-            <p className="mb-1">No sync runs yet.</p>
-            <p className="text-xs text-slate-300">
+          <div className="p-10 text-center">
+            <p className="text-[13px] text-zinc-500">No sync runs yet.</p>
+            <p className="text-[12px] text-zinc-400 mt-1">
               Kick off the Wabtec SCC scraper to populate this view.
             </p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b bg-slate-50">
-            <h3 className="font-bold text-slate-700 text-sm">Data Sources</h3>
+        <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden">
+          <div className="px-5 py-3 border-b border-zinc-200">
+            <h3 className="text-[13px] font-semibold text-zinc-900 tracking-tight">Data sources</h3>
           </div>
-          <div className="p-5 space-y-4 text-sm">
+          <div className="px-5 py-4 space-y-3">
             <SourceRow name="Wabtec SCC" status="ready" />
             <SourceRow name="Made2Manage (M2M)" status="ready" />
             <SourceRow name="UniPoint" status="ready" />
@@ -60,16 +55,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, onRefresh }) => {
 interface StatCardProps {
   label: string
   value: number | string
-  accent: string
-  valueClassName?: string
+  tone: 'default' | 'critical' | 'warning' | 'success' | 'muted'
+  smallValue?: boolean
 }
 
-const StatCard: React.FC<StatCardProps> = ({ label, value, accent, valueClassName }) => (
-  <div className={`bg-white p-5 rounded-xl border-l-4 ${accent} shadow-sm`}>
-    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{label}</div>
-    <div className={valueClassName || 'text-3xl font-bold text-slate-800 mt-1'}>{value}</div>
-  </div>
-)
+const StatCard: React.FC<StatCardProps> = ({ label, value, tone, smallValue }) => {
+  const dot =
+    tone === 'critical' ? 'bg-red-500'
+    : tone === 'warning' ? 'bg-amber-500'
+    : tone === 'success' ? 'bg-green-500'
+    : tone === 'muted' ? 'bg-zinc-300'
+    : 'bg-zinc-400'
+  return (
+    <div className="bg-white border border-zinc-200 rounded-lg p-5">
+      <div className="flex items-center gap-2 mb-2">
+        <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+        <span className="text-[11px] font-medium text-zinc-500 tracking-tight">{label}</span>
+      </div>
+      <div
+        className={
+          smallValue
+            ? 'text-[13px] text-zinc-900 font-mono'
+            : 'text-[28px] font-semibold text-zinc-900 tabular-nums tracking-tight leading-none'
+        }
+      >
+        {value}
+      </div>
+    </div>
+  )
+}
 
 interface SourceRowProps {
   name: string
@@ -78,14 +92,16 @@ interface SourceRowProps {
 
 const SourceRow: React.FC<SourceRowProps> = ({ name, status }) => {
   const dotColor =
-    status === 'ready' ? 'bg-green-500' : status === 'syncing' ? 'bg-blue-500' : 'bg-red-500'
+    status === 'ready' ? 'bg-green-500'
+    : status === 'syncing' ? 'bg-blue-500'
+    : 'bg-red-500'
   const label = status === 'ready' ? 'Ready' : status === 'syncing' ? 'Syncing' : 'Error'
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-slate-700 font-medium">{name}</span>
-      <span className="flex items-center gap-2">
-        <span className={`w-2 h-2 rounded-full ${dotColor}`} />
-        <span className="text-xs text-slate-500 uppercase tracking-wide font-bold">{label}</span>
+    <div className="flex items-center justify-between text-[13px]">
+      <span className="text-zinc-700">{name}</span>
+      <span className="inline-flex items-center gap-1.5">
+        <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+        <span className="text-[11px] text-zinc-500 font-medium">{label}</span>
       </span>
     </div>
   )
