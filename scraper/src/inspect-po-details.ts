@@ -343,6 +343,11 @@ const PAGES_TO_SCRAPE = 40
 const ROWS_PER_PAGE = 25
 const PER_PO_DELAY_MS = 1200
 
+// Resume controls — START_PAGE skips pages already done; RESUME_FROM preloads
+// the partial JSON written by that prior run.
+const START_PAGE = Math.max(1, parseInt(process.env.START_PAGE || '1', 10) || 1)
+const RESUME_FROM = process.env.RESUME_FROM || ''
+
 interface PoHistoryEntry {
   poNumber: string
   rowIdx: number
@@ -411,14 +416,41 @@ async function scrapeOnePoHistory(
 }
 
 ;(async () => {
+  // Preload prior partial run if RESUME_FROM points at one.
+  let preloaded: PoHistoryEntry[] = []
+  if (RESUME_FROM) {
+    try {
+      const resumePath = path.isAbsolute(RESUME_FROM)
+        ? RESUME_FROM
+        : path.resolve(downloadDir, RESUME_FROM)
+      preloaded = JSON.parse(fs.readFileSync(resumePath, 'utf-8'))
+      console.log(`Preloaded ${preloaded.length} entries from ${path.basename(resumePath)}`)
+    } catch (e) {
+      console.warn(`RESUME_FROM "${RESUME_FROM}" failed to load:`, e)
+    }
+  }
+
   const { browser, page } = await loginAndNavigate()
   const outPath = path.join(downloadDir, `po-history-${Date.now()}.json`)
-  const results: PoHistoryEntry[] = []
+  const results: PoHistoryEntry[] = [...preloaded]
 
   try {
     const colId = await resolvePoNumberColId(page)
 
-    for (let pageNum = 1; pageNum <= PAGES_TO_SCRAPE; pageNum++) {
+    // Advance grid to START_PAGE before iterating.
+    for (let i = 1; i < START_PAGE; i++) {
+      const nextBtn = page.locator('button:has-text("Next")').first()
+      const disabled = await nextBtn.getAttribute('disabled').catch(() => null)
+      if (disabled !== null) {
+        console.log(`  Next disabled while seeking to page ${START_PAGE} (stopped at ${i}).`)
+        break
+      }
+      await nextBtn.click()
+      await page.waitForTimeout(2500)
+    }
+    if (START_PAGE > 1) console.log(`  Resumed at page ${START_PAGE} (${results.length} preloaded entries).`)
+
+    for (let pageNum = START_PAGE; pageNum <= PAGES_TO_SCRAPE; pageNum++) {
       console.log(`\n=== Page ${pageNum} / ${PAGES_TO_SCRAPE} ===`)
       const baseIdx = (pageNum - 1) * ROWS_PER_PAGE
       for (let i = 0; i < ROWS_PER_PAGE; i++) {
@@ -428,9 +460,13 @@ async function scrapeOnePoHistory(
         results.push(entry)
         await page.waitForTimeout(PER_PO_DELAY_MS)
       }
-      // Incremental save after each page — crash loses at most one page's work.
-      fs.writeFileSync(outPath, JSON.stringify(results, null, 2))
-      console.log(`  Saved ${results.length} PO histories so far to ${path.basename(outPath)}`)
+      // Incremental save after each page — dedupe by rowIdx so resumed runs
+      // overwrite their re-scraped rows instead of doubling them.
+      const dedupedMap = new Map<number, PoHistoryEntry>()
+      for (const r of results) dedupedMap.set(r.rowIdx, r)
+      const deduped = Array.from(dedupedMap.values()).sort((a, b) => a.rowIdx - b.rowIdx)
+      fs.writeFileSync(outPath, JSON.stringify(deduped, null, 2))
+      console.log(`  Saved ${deduped.length} PO histories so far to ${path.basename(outPath)} (raw=${results.length})`)
 
       // Advance to next page — same pattern as the working scraper.
       if (pageNum < PAGES_TO_SCRAPE) {

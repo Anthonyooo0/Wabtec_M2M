@@ -30,6 +30,12 @@ const PAGES_TO_SCRAPE = 40
 const ROWS_PER_PAGE = 25
 const PER_PO_DELAY_MS = 1500          // pacing — don't hammer SCC
 
+// Resume controls — set START_PAGE to skip pages already done in a prior run.
+// RESUME_FROM points at the partial JSON file written by that prior run; its
+// rows are preloaded into the results array so dedupe-by-PO-line keeps them.
+const START_PAGE = Math.max(1, parseInt(process.env.START_PAGE || '1', 10) || 1)
+const RESUME_FROM = process.env.RESUME_FROM || ''
+
 interface PODetails {
   poNumber: string
   poLineNumber: string | null
@@ -233,11 +239,26 @@ async function scrapePages(
   page: Page,
   pagesToScrape: number,
   outPath: string,
+  startPage: number,
+  preloaded: PODetails[],
 ): Promise<PODetails[]> {
   const colId = await resolvePoNumberColId(page)
-  const results: PODetails[] = []
+  const results: PODetails[] = [...preloaded]
 
-  for (let pageNum = 1; pageNum <= pagesToScrape; pageNum++) {
+  // Advance grid to startPage by clicking Next (startPage - 1) times.
+  for (let i = 1; i < startPage; i++) {
+    const nextBtn = page.locator('button:has-text("Next")').first()
+    const disabled = await nextBtn.getAttribute('disabled').catch(() => null)
+    if (disabled !== null) {
+      console.log(`  Next disabled while seeking to page ${startPage} (stopped at ${i}).`)
+      break
+    }
+    await nextBtn.click()
+    await page.waitForTimeout(2500)
+  }
+  if (startPage > 1) console.log(`  Resumed at page ${startPage} (${results.length} preloaded rows).`)
+
+  for (let pageNum = startPage; pageNum <= pagesToScrape; pageNum++) {
     console.log(`\n=== Page ${pageNum} / ${pagesToScrape} ===`)
 
     // Same pattern as the single-PO test that worked. ag-Grid keeps row-index
@@ -261,8 +282,12 @@ async function scrapePages(
     }
 
     // Incremental save after every page so a crash loses at most one page's work.
-    fs.writeFileSync(outPath, JSON.stringify(results, null, 2))
-    console.log(`  Saved ${results.length} rows so far to ${path.basename(outPath)}`)
+    // Dedupe by PO+line — a resumed run may re-scrape rows that exist in preloaded.
+    const dedupedMap = new Map<string, PODetails>()
+    for (const r of results) dedupedMap.set(`${r.poNumber}|${r.poLineNumber ?? ''}`, r)
+    const deduped = Array.from(dedupedMap.values())
+    fs.writeFileSync(outPath, JSON.stringify(deduped, null, 2))
+    console.log(`  Saved ${deduped.length} rows so far to ${path.basename(outPath)} (raw=${results.length})`)
 
     // Advance to next page (unless this was the last one).
     if (pageNum < pagesToScrape) {
@@ -352,11 +377,26 @@ async function extractDetails(page: Page, poNumber: string): Promise<PODetails> 
 }
 
 ;(async () => {
+  // Preload prior partial run if RESUME_FROM points at one. Failures are non-fatal —
+  // we just start with an empty array.
+  let preloaded: PODetails[] = []
+  if (RESUME_FROM) {
+    try {
+      const resumePath = path.isAbsolute(RESUME_FROM)
+        ? RESUME_FROM
+        : path.resolve(downloadDir, RESUME_FROM)
+      preloaded = JSON.parse(fs.readFileSync(resumePath, 'utf-8'))
+      console.log(`Preloaded ${preloaded.length} rows from ${path.basename(resumePath)}`)
+    } catch (e) {
+      console.warn(`RESUME_FROM "${RESUME_FROM}" failed to load:`, e)
+    }
+  }
+
   const { browser, page } = await loginAndNavigate()
   const outPath = path.join(downloadDir, `po-details-${Date.now()}.json`)
   try {
     const started = Date.now()
-    const results = await scrapePages(page, PAGES_TO_SCRAPE, outPath)
+    const results = await scrapePages(page, PAGES_TO_SCRAPE, outPath, START_PAGE, preloaded)
     const elapsedMin = ((Date.now() - started) / 60000).toFixed(1)
     console.log(
       `\nDone. ${results.length} POs scraped in ${elapsedMin} min.\nFinal file: ${outPath}`,
