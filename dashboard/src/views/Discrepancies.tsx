@@ -6,6 +6,7 @@ import {
   type Discrepancy,
   type DiscrepancyKind,
   type M2MPO,
+  type OrphanDiscrepancy,
 } from '../services/m2mData'
 import type { WabtecPO } from '../services/wabtecData'
 import { SCCStatusBadge, M2MStateBadge, fmtIsoDate } from '../components/StatusBadges'
@@ -13,6 +14,7 @@ import { PoLink } from '../components/PoLink'
 
 interface DiscrepanciesProps {
   items: Discrepancy[]
+  orphanDiscrepancies?: OrphanDiscrepancy[]
   loading: boolean
   error: string | null
   acceptedDateByPo?: Map<string, Date>
@@ -29,6 +31,7 @@ const severityOf = (kind: DiscrepancyKind): Severity => {
 
 export const Discrepancies: React.FC<DiscrepanciesProps> = ({
   items,
+  orphanDiscrepancies = [],
   loading,
   error,
   acceptedDateByPo = new Map(),
@@ -70,7 +73,7 @@ export const Discrepancies: React.FC<DiscrepanciesProps> = ({
       </div>
     )
   }
-  if (items.length === 0) {
+  if (items.length === 0 && orphanDiscrepancies.length === 0) {
     return (
       <div className="bg-white border border-mauve-6 rounded-lg p-12 text-center">
         <h3 className="text-[15px] font-semibold text-mauve-12 tracking-tight">Nothing to show</h3>
@@ -81,7 +84,7 @@ export const Discrepancies: React.FC<DiscrepanciesProps> = ({
     )
   }
 
-  if (realDiscrepancyCount === 0 && pendingIntake.length > 0) {
+  if (realDiscrepancyCount === 0 && orphanDiscrepancies.length === 0 && pendingIntake.length > 0) {
     return (
       <div className="space-y-6 view-transition">
         <PendingIntakeSection items={pendingIntake} acceptedDateByPo={acceptedDateByPo} />
@@ -98,6 +101,12 @@ export const Discrepancies: React.FC<DiscrepanciesProps> = ({
 
   return (
     <div className="space-y-8 view-transition">
+      {/* Orphan-derived discrepancies appear ABOVE the regular Critical section
+          because they are the highest-risk items: shipping decisions made
+          against POs that Wabtec has cancelled or doesn't see at all. */}
+      {orphanDiscrepancies.length > 0 && (
+        <OrphanDiscrepancySection items={orphanDiscrepancies} />
+      )}
       {pendingIntake.length > 0 && (
         <PendingIntakeSection items={pendingIntake} acceptedDateByPo={acceptedDateByPo} />
       )}
@@ -606,4 +615,142 @@ const stalenessClass = (days: number | null): { text: string; border: string } =
   if (days >= 14) return { text: 'text-red-600', border: 'border-red-300' }
   if (days >= 7) return { text: 'text-amber-600', border: 'border-amber-300' }
   return { text: 'text-mauve-12', border: 'border-mauve-7' }
+}
+
+// =============================================================================
+// Orphan-derived discrepancies — sourced from cross-referencing the M2M
+// orphan list against the orphan-lookup scraper output. Pinned to the top
+// of the Discrepancies view because both kinds are critical.
+// =============================================================================
+const OrphanDiscrepancySection: React.FC<{ items: OrphanDiscrepancy[] }> = ({ items }) => {
+  const [open, setOpen] = useState(true)
+
+  const cancelled = items.filter((i) => i.kind === 'orphan_scc_cancelled_m2m_active')
+  const notInScc = items.filter((i) => i.kind === 'orphan_not_in_scc')
+
+  return (
+    <section>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center gap-3 text-left mb-3"
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="text-[15px] font-semibold text-mauve-12 tracking-tight">
+              Critical — Orphan-derived
+            </h3>
+            <span className="px-1.5 py-0.5 text-[11px] font-mono bg-mauve-3 rounded text-mauve-11 tabular-nums">
+              {items.length.toLocaleString()}
+            </span>
+          </div>
+          <p className="text-[12px] text-mauve-11 mt-0.5">
+            M2M sales orders that conflict with the orphan-lookup data:
+            {cancelled.length > 0 && ` ${cancelled.length} cancelled in SCC but open in M2M`}
+            {cancelled.length > 0 && notInScc.length > 0 && ' ·'}
+            {notInScc.length > 0 && ` ${notInScc.length} not found in SCC at all`}.
+          </p>
+        </div>
+        <svg
+          className={`w-3.5 h-3.5 text-mauve-9 transition-transform ${open ? 'rotate-90' : ''}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="space-y-3">
+          {items.map((d, i) => (
+            <OrphanDiscrepancyCard key={`${d.kind}-${d.orphan.wabtecPo}-${i}`} d={d} />
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+const OrphanDiscrepancyCard: React.FC<{ d: OrphanDiscrepancy }> = ({ d }) => {
+  const { orphan, lookup, sccStatus, kind } = d
+  const isCancelled = kind === 'orphan_scc_cancelled_m2m_active'
+
+  return (
+    <div className="bg-white border border-mauve-6 rounded-lg overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-mauve-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+          <OrphanSeverityPill kind={kind} />
+          <span className="font-mono text-[12px] text-mauve-12">
+            PO <PoLink poNumber={orphan.wabtecPo} />
+          </span>
+          <span className="text-mauve-7">·</span>
+          <span className="text-[12px] text-mauve-11">SO {orphan.macSo}</span>
+          <span className="text-mauve-7">·</span>
+          <span className="font-mono text-[11px] text-mauve-11 truncate max-w-[200px]" title={orphan.item}>
+            {orphan.item}
+          </span>
+        </div>
+        <span className="text-[11px] text-mauve-11 truncate max-w-[260px]" title={orphan.customerName}>
+          {orphan.customerName}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 divide-x divide-mauve-4">
+        <div className="p-4">
+          <div className="text-[10px] text-mauve-11 mb-2">Wabtec SCC</div>
+          {isCancelled ? (
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-mauve-6 bg-white text-[11px] font-medium text-mauve-12">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                {sccStatus || 'Cancelled'}
+              </div>
+              {lookup && lookup.lines[0]?.details && (
+                <div className="text-[11px] text-mauve-11">
+                  {lookup.lines[0].details.itemNumber && <>Item <span className="font-mono">{lookup.lines[0].details.itemNumber}</span></>}
+                  {lookup.lines[0].details.buyer.name && <> · Buyer {lookup.lines[0].details.buyer.name}</>}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-mauve-6 bg-white text-[11px] font-medium text-mauve-11">
+                <span className="w-1.5 h-1.5 rounded-full bg-mauve-7" />
+                Not found in SCC
+              </div>
+              <div className="text-[11px] text-mauve-11">
+                Even the per-PO filter lookup didn&apos;t return a match.
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 bg-mauve-3/40">
+          <div className="text-[10px] text-mauve-11 mb-2">Made2Manage</div>
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-mauve-6 bg-white text-[11px] font-medium text-mauve-12">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              {orphan.soStatus || 'Open'}
+            </div>
+            <div className="text-[11px] text-mauve-11">
+              Qty {orphan.totalQty.toLocaleString()} · {orphan.lineCount} line{orphan.lineCount !== 1 ? 's' : ''}
+              {orphan.promiseDate && <> · promise <span className="font-mono">{orphan.promiseDate.slice(0, 10)}</span></>}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 py-2 border-t border-mauve-4 bg-mauve-2/50 text-[11px] text-mauve-11">
+        {d.summary}
+      </div>
+    </div>
+  )
+}
+
+const OrphanSeverityPill: React.FC<{ kind: 'orphan_scc_cancelled_m2m_active' | 'orphan_not_in_scc' }> = ({ kind }) => {
+  const label = kind === 'orphan_scc_cancelled_m2m_active' ? 'Cancelled vs Open' : 'Not in SCC'
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-mauve-6 bg-white text-[10px] font-medium text-mauve-12">
+      <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+      {label}
+    </span>
+  )
 }

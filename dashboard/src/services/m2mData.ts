@@ -198,6 +198,80 @@ export function sccStatusFromLookup(entry: OrphanLookupEntry | undefined): strin
   return null
 }
 
+// =============================================================================
+// Orphan-derived discrepancies — found by cross-referencing the M2M orphan
+// list (open WTS sales orders not in the bulk SCC export) against the orphan-
+// lookup scraper's per-PO results. Two kinds, both critical:
+//
+//   1. orphan_scc_cancelled_m2m_active — Wabtec SCC marked the PO Cancelled
+//      but M2M still shows the SO Open. Highest-risk: we'd ship something
+//      Wabtec doesn't expect, can't bill, possible RMA.
+//
+//   2. orphan_not_in_scc — M2M has the PO open but the orphan-lookup scraper
+//      couldn't find it via the per-PO filter either. Either the PO genuinely
+//      doesn't exist in the WTS SCC instance (might be on a different
+//      portal — Wabtec Global Services, Progress Rail, etc.), or the scraper
+//      missed it. Either way needs human triage.
+// =============================================================================
+export type OrphanDiscrepancyKind = 'orphan_scc_cancelled_m2m_active' | 'orphan_not_in_scc'
+
+export interface OrphanDiscrepancy {
+  kind: OrphanDiscrepancyKind
+  orphan: M2MOrphan
+  lookup: OrphanLookupEntry | null
+  sccStatus: string | null
+  summary: string
+}
+
+export function computeOrphanDiscrepancies(
+  orphans: M2MOrphan[],
+  orphanLookup: Map<string, OrphanLookupEntry>,
+): OrphanDiscrepancy[] {
+  const out: OrphanDiscrepancy[] = []
+  for (const o of orphans) {
+    const m2mStatus = (o.soStatus || '').trim().toLowerCase()
+    // Only flag if the M2M side is still active. A closed/cancelled SO with
+    // a cancelled SCC PO is by definition not a discrepancy.
+    const m2mIsOpen = m2mStatus === '' || m2mStatus.startsWith('open')
+    if (!m2mIsOpen) continue
+
+    const key = (o.wabtecPo || '').trim().toUpperCase()
+    const lookup = orphanLookup.get(key)
+
+    if (!lookup || !lookup.found) {
+      out.push({
+        kind: 'orphan_not_in_scc',
+        orphan: o,
+        lookup: null,
+        sccStatus: null,
+        summary:
+          'Open M2M sales order, but the PO was not found in Wabtec SCC even via the per-PO search. ' +
+          'Confirm the PO with the buyer or check whether it lives on a different SCC instance.',
+      })
+      continue
+    }
+
+    const sccStatus = sccStatusFromLookup(lookup)
+    if (sccStatus && /cancel/i.test(sccStatus)) {
+      out.push({
+        kind: 'orphan_scc_cancelled_m2m_active',
+        orphan: o,
+        lookup,
+        sccStatus,
+        summary:
+          `Wabtec SCC shows the PO as ${sccStatus} but M2M still has the sales order Open. ` +
+          'Verify with the buyer before shipping — billing risk.',
+      })
+    }
+  }
+  // Sort: cancelled-vs-open first (highest urgency), then not-in-SCC
+  out.sort((a, b) => {
+    if (a.kind === b.kind) return a.orphan.wabtecPo.localeCompare(b.orphan.wabtecPo)
+    return a.kind === 'orphan_scc_cancelled_m2m_active' ? -1 : 1
+  })
+  return out
+}
+
 
 export async function loadM2MOrphans(
   knownSccPos: string[],

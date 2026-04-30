@@ -11,8 +11,8 @@ import { PoHistory } from './views/PoHistory'
 import { M2MOrphans } from './views/M2MOrphans'
 import { loadWabtecPOs, type WabtecPO } from './services/wabtecData'
 import {
-  loadM2MPOs, loadM2MOrphans, loadOrphanLookup, diff, isDiscrepancy,
-  type M2MPO, type M2MOrphan, type OrphanLookupEntry, type Discrepancy,
+  loadM2MPOs, loadM2MOrphans, loadOrphanLookup, computeOrphanDiscrepancies, diff, isDiscrepancy,
+  type M2MPO, type M2MOrphan, type OrphanLookupEntry, type OrphanDiscrepancy, type Discrepancy,
 } from './services/m2mData'
 import { loadPoHistory, buildAcceptedDateIndex } from './services/poHistoryData'
 import { PoCollaborationProvider } from './contexts/PoCollaborationContext'
@@ -120,9 +120,15 @@ const App: React.FC = () => {
     return <Login onLogin={setCurrentUser} />
   }
 
+  // Cross-reference M2M orphans against orphan-lookup data to find:
+  //   • PO cancelled in SCC but open in M2M (critical)
+  //   • PO not in SCC at all even via per-PO lookup (critical)
+  const orphanDiscrepancies: OrphanDiscrepancy[] = computeOrphanDiscrepancies(orphans, orphanLookup)
+
   const stats: DashboardStats = {
     totalPOs: wabtec.length,
-    discrepancies: discrepancies.filter((d) => isDiscrepancy(d.kind)).length,
+    discrepancies:
+      discrepancies.filter((d) => isDiscrepancy(d.kind)).length + orphanDiscrepancies.length,
     lateShipments: 0,
     lastSync,
   }
@@ -184,6 +190,7 @@ const App: React.FC = () => {
           {currentView === 'discrepancies' && (
             <Discrepancies
               items={discrepancies}
+              orphanDiscrepancies={orphanDiscrepancies}
               loading={loading}
               error={error}
               acceptedDateByPo={acceptedDateByPo}
