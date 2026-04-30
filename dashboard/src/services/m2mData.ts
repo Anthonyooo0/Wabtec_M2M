@@ -238,7 +238,13 @@ export function computeOrphanDiscrepancies(
     const key = (o.wabtecPo || '').trim().toUpperCase()
     const lookup = orphanLookup.get(key)
 
-    if (!lookup || !lookup.found) {
+    // No entry at all → orphan-lookup scraper hasn't visited this PO yet
+    // (likely fell off the SCC bulk export window since the last scrape).
+    // NOT a discrepancy — just stale data. Skip silently; the M2M Orphans
+    // tab shows "Lookup pending" for these.
+    if (!lookup) continue
+
+    if (!lookup.found) {
       out.push({
         kind: 'orphan_not_in_scc',
         orphan: o,

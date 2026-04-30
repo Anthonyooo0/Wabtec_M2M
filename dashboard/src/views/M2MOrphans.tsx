@@ -73,7 +73,7 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
 }) => {
   const [search, setSearch] = useState('')
   const [customerFilter, setCustomerFilter] = useState<string>('all')
-  const [sccFilter, setSccFilter] = useState<'all' | 'found' | 'not-found'>('all')
+  const [sccFilter, setSccFilter] = useState<'all' | 'found' | 'pending' | 'missing'>('all')
   const [sccStatusFilter, setSccStatusFilter] = useState<string>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
 
@@ -103,9 +103,9 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
     return orphans.filter((o) => {
       if (customerFilter !== 'all' && o.customerName.trim() !== customerFilter) return false
       const lookup = orphanLookup.get(lookupKey(o.wabtecPo))
-      const inScc = !!(lookup && lookup.found)
-      if (sccFilter === 'found' && !inScc) return false
-      if (sccFilter === 'not-found' && inScc) return false
+      const state: 'found' | 'pending' | 'missing' =
+        lookup?.found ? 'found' : !lookup ? 'pending' : 'missing'
+      if (sccFilter !== 'all' && state !== sccFilter) return false
       if (sccStatusFilter !== 'all') {
         const status = sccStatusFromLookup(lookup) || ''
         if (status !== sccStatusFilter) return false
@@ -222,12 +222,13 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
             </select>
             <select
               value={sccFilter}
-              onChange={(e) => setSccFilter(e.target.value as 'all' | 'found' | 'not-found')}
+              onChange={(e) => setSccFilter(e.target.value as 'all' | 'found' | 'pending' | 'missing')}
               className="px-3 py-1.5 text-[13px] border border-mauve-6 rounded-md bg-mauve-2 hover:bg-white focus:bg-white focus:border-mauve-8 focus:ring-0 outline-none transition-colors"
             >
               <option value="all">All SCC states</option>
               <option value="found">Found in SCC</option>
-              <option value="not-found">Not in SCC</option>
+              <option value="pending">Lookup pending</option>
+              <option value="missing">Not in SCC (confirmed)</option>
             </select>
             <select
               value={sccStatusFilter}
@@ -287,9 +288,18 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
                       <td className="px-4 py-2.5">
                         {lookup?.found ? (
                           <StatusPill status={sccStatus || 'In SCC'} />
-                        ) : (
+                        ) : !lookup ? (
+                          // No entry at all → orphan-lookup hasn't visited
+                          // this PO yet (entered M2M's orphan list after the
+                          // last scrape). Not a discrepancy — just stale data.
                           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-mauve-6 bg-white text-[10px] font-medium text-mauve-11">
                             <span className="w-1.5 h-1.5 rounded-full bg-mauve-7" />
+                            Lookup pending
+                          </span>
+                        ) : (
+                          // Entry exists with found=false → genuinely missing in SCC
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-mauve-6 bg-white text-[10px] font-medium text-mauve-12">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                             Not in SCC
                           </span>
                         )}
