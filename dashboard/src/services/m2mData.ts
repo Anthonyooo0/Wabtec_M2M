@@ -121,6 +121,84 @@ interface M2MOrphansResponse {
   generatedAt: string
 }
 
+// =============================================================================
+// Orphan-lookup data — output of scrape-orphan-lookup.ts. For each orphan PO
+// found in SCC via the per-PO filter lookup (NOT the bulk grid export),
+// captures one entry per line/release/shipment combo with full Details +
+// History from inside the SCC modal. 12 POs in the current dataset have
+// >1 line; the rest have 1.
+// =============================================================================
+export interface OrphanLookupHistory {
+  poNumber: string
+  historyRowCount: number
+  columns: { colId: string; header: string }[]
+  rows: Record<string, string>[]
+  scrapedAt: string
+}
+
+export interface OrphanLookupDetails {
+  poNumber: string
+  poLineNumber: string | null
+  itemNumber: string | null
+  shipTo: { address: string | null; city: string | null; state: string | null; zip: string | null; country: string | null }
+  shipFrom: { name: string | null; address1: string | null; address2: string | null; city: string | null; state: string | null; zip: string | null; country: string | null }
+  buyer: { name: string | null; email: string | null }
+  sendVia: string | null
+  fob: string | null
+  shippingTerms: string | null
+  shippingInstruction: string | null
+  raw: Record<string, string>
+  scrapedAt: string
+}
+
+export interface OrphanLookupLine {
+  rowIdx: number
+  details: OrphanLookupDetails
+  history: OrphanLookupHistory
+}
+
+export interface OrphanLookupEntry {
+  po: string
+  found: boolean
+  matchedRowCount: number
+  lines: OrphanLookupLine[]
+  scrapedAt: string
+  error?: string
+}
+
+// Loads the static JSON dropped by the orphan-lookup scraper. Indexed by PO
+// number (uppercased + trimmed) so the M2M Orphans view can do an O(1)
+// "did we find this in SCC?" lookup.
+export async function loadOrphanLookup(): Promise<Map<string, OrphanLookupEntry>> {
+  try {
+    const res = await fetch('/sample-data/wabtec-orphan-lookup.json')
+    if (!res.ok) return new Map()
+    const arr = (await res.json()) as OrphanLookupEntry[]
+    const map = new Map<string, OrphanLookupEntry>()
+    for (const entry of arr) {
+      const key = String(entry.po || '').trim().toUpperCase()
+      if (key) map.set(key, entry)
+    }
+    return map
+  } catch {
+    return new Map()
+  }
+}
+
+// Pull the SCC-side status off an orphan-lookup entry. SCC stores it under
+// "SCC Status" in the Details modal's raw label-input map; we fall back to
+// "PO Line Status" if the top-level field is empty.
+export function sccStatusFromLookup(entry: OrphanLookupEntry | undefined): string | null {
+  if (!entry || !entry.found || entry.lines.length === 0) return null
+  for (const line of entry.lines) {
+    const raw = line.details.raw || {}
+    const status = raw['SCC Status'] || raw['PO Line Status']
+    if (status) return status.trim()
+  }
+  return null
+}
+
+
 export async function loadM2MOrphans(
   knownSccPos: string[],
   includeClosed = false,

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
-import type { M2MOrphan } from '../services/m2mData'
+import type { M2MOrphan, OrphanLookupEntry, OrphanLookupLine } from '../services/m2mData'
+import { sccStatusFromLookup } from '../services/m2mData'
 
 interface M2MOrphansProps {
   orphans: M2MOrphan[]
@@ -7,6 +8,9 @@ interface M2MOrphansProps {
   matchedToScc: number
   loading: boolean
   error: string | null
+  // Map of Wabtec PO (uppercase) -> orphan-lookup entry. Empty if the
+  // wabtec-orphan-lookup.json hasn't been generated yet.
+  orphanLookup: Map<string, OrphanLookupEntry>
 }
 
 const fmtDate = (iso: string | null): string => {
@@ -17,13 +21,15 @@ const fmtDate = (iso: string | null): string => {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-// Tiny status pill with a colored dot prefix — Vercel-style.
 const StatusPill: React.FC<{ status: string }> = ({ status }) => {
   const lower = status.toLowerCase()
   const dot =
     lower.startsWith('open') ? 'bg-green-500'
     : lower.startsWith('hold') ? 'bg-amber-500'
     : lower.startsWith('cancel') ? 'bg-red-500'
+    : lower.startsWith('accept') || lower === 'active' ? 'bg-green-500'
+    : lower.startsWith('reject') ? 'bg-red-500'
+    : lower.startsWith('revis') ? 'bg-amber-500'
     : 'bg-mauve-9'
   return (
     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-mauve-6 bg-white text-[10px] font-medium text-mauve-12">
@@ -33,7 +39,6 @@ const StatusPill: React.FC<{ status: string }> = ({ status }) => {
   )
 }
 
-// Vercel-style stat: small label, oversized tabular number, optional sublabel.
 const Stat: React.FC<{ label: string; value: number; sublabel?: string; tone?: 'default' | 'critical' | 'success' }> = ({
   label,
   value,
@@ -64,9 +69,11 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
   matchedToScc,
   loading,
   error,
+  orphanLookup,
 }) => {
   const [search, setSearch] = useState('')
   const [customerFilter, setCustomerFilter] = useState<string>('all')
+  const [sccFilter, setSccFilter] = useState<'all' | 'found' | 'not-found'>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
 
   const customers = useMemo(() => {
@@ -75,10 +82,16 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
     return Array.from(set).sort()
   }, [orphans])
 
+  const lookupKey = (po: string) => po.trim().toUpperCase()
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return orphans.filter((o) => {
       if (customerFilter !== 'all' && o.customerName.trim() !== customerFilter) return false
+      const lookup = orphanLookup.get(lookupKey(o.wabtecPo))
+      const inScc = !!(lookup && lookup.found)
+      if (sccFilter === 'found' && !inScc) return false
+      if (sccFilter === 'not-found' && inScc) return false
       if (!q) return true
       return (
         o.wabtecPo.toLowerCase().includes(q) ||
@@ -88,16 +101,23 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
         o.itemDesc.toLowerCase().includes(q)
       )
     })
-  }, [orphans, search, customerFilter])
+  }, [orphans, search, customerFilter, sccFilter, orphanLookup])
+
+  const foundInSccCount = useMemo(
+    () => orphans.filter((o) => orphanLookup.get(lookupKey(o.wabtecPo))?.found).length,
+    [orphans, orphanLookup],
+  )
 
   const handleExportCSV = () => {
     const header = [
-      'Wabtec PO', 'M2M SO', 'Status', 'Customer', 'Order Date',
+      'Wabtec PO', 'M2M SO', 'M2M Status', 'SCC Status', 'Customer', 'Order Date',
       'Line Count', 'First Item', 'Description', 'Total Qty', 'Promise Date',
     ].join(',')
     const rows = filtered.map((o) => {
+      const lookup = orphanLookup.get(lookupKey(o.wabtecPo))
+      const sccStatus = sccStatusFromLookup(lookup) || (lookup?.found ? 'In SCC' : 'Not in SCC')
       const cells = [
-        o.wabtecPo, o.macSo, o.soStatus, o.customerName, fmtDate(o.orderDate),
+        o.wabtecPo, o.macSo, o.soStatus, sccStatus, o.customerName, fmtDate(o.orderDate),
         String(o.lineCount), o.item, o.itemDesc, String(o.totalQty), fmtDate(o.promiseDate),
       ].map((v) => {
         const s = String(v ?? '')
@@ -142,26 +162,23 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header — title + thin context line. Replaces the prior blue banner. */}
       <div>
         <h1 className="text-[22px] font-semibold text-mauve-12 tracking-tight">M2M Orphans</h1>
         <p className="text-[13px] text-mauve-11 mt-1 leading-relaxed max-w-3xl">
-          Open WTS sales orders (FPRODCL 04 or 40) whose customer PO does not appear in the SCC scrape.
-          Some entries belong on a different SCC instance we don&apos;t yet have credentials for —
-          use this list to triage which subgroups need separate scrapers.
+          Open WTS sales orders (FPRODCL 04 or 40) whose customer PO does not appear in the bulk SCC export.
+          The orphan-lookup scraper searches each one in SCC&apos;s filter UI; rows with a green &quot;In SCC&quot;
+          pill have full details + history captured. Click any row for the breakdown.
         </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <Stat label="Total WTS lines" value={totalM2MWabtec} sublabel="Open · FPRODCL 04/40" />
-        <Stat label="Matched to SCC" value={matchedToScc} sublabel="PO present in scrape" tone="success" />
-        <Stat label="Orphans" value={orphans.length} sublabel="Triage required" tone="critical" />
+        <Stat label="Matched to SCC export" value={matchedToScc} sublabel="Bulk grid hit" tone="success" />
+        <Stat label="Orphans" value={orphans.length} sublabel="Not in bulk export" tone="critical" />
+        <Stat label="Found via lookup" value={foundInSccCount} sublabel="Per-PO filter hit" tone="success" />
       </div>
 
-      {/* Card containing toolbar + table */}
       <div className="bg-white border border-mauve-6 rounded-lg overflow-hidden">
-        {/* Toolbar */}
         <div className="px-4 py-3 border-b border-mauve-6 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[11px] font-medium text-mauve-11 tabular-nums">
@@ -185,6 +202,15 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
+            <select
+              value={sccFilter}
+              onChange={(e) => setSccFilter(e.target.value as 'all' | 'found' | 'not-found')}
+              className="px-3 py-1.5 text-[13px] border border-mauve-6 rounded-md bg-mauve-2 hover:bg-white focus:bg-white focus:border-mauve-8 focus:ring-0 outline-none transition-colors"
+            >
+              <option value="all">All SCC states</option>
+              <option value="found">Found in SCC</option>
+              <option value="not-found">Not in SCC</option>
+            </select>
           </div>
           <button
             onClick={handleExportCSV}
@@ -197,14 +223,14 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
           </button>
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
               <tr className="border-b border-mauve-6 bg-mauve-3/50">
                 <th className="text-left px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide">Wabtec PO</th>
                 <th className="text-left px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide">M2M SO</th>
-                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide">Status</th>
+                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide">M2M Status</th>
+                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide">SCC Status</th>
                 <th className="text-left px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide">Customer</th>
                 <th className="text-left px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide">Ordered</th>
                 <th className="text-left px-4 py-2.5 text-[11px] font-medium text-mauve-11 tracking-wide">First item</th>
@@ -217,6 +243,8 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
               {filtered.map((o) => {
                 const key = `${o.macSo}-${o.wabtecPo}`
                 const isOpen = expanded === key
+                const lookup = orphanLookup.get(lookupKey(o.wabtecPo))
+                const sccStatus = sccStatusFromLookup(lookup)
                 return (
                   <React.Fragment key={key}>
                     <tr
@@ -226,6 +254,16 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
                       <td className="px-4 py-2.5 font-mono text-[12px] text-mauve-12">{o.wabtecPo}</td>
                       <td className="px-4 py-2.5 font-mono text-[12px] text-mauve-12">{o.macSo}</td>
                       <td className="px-4 py-2.5"><StatusPill status={o.soStatus} /></td>
+                      <td className="px-4 py-2.5">
+                        {lookup?.found ? (
+                          <StatusPill status={sccStatus || 'In SCC'} />
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-mauve-6 bg-white text-[10px] font-medium text-mauve-11">
+                            <span className="w-1.5 h-1.5 rounded-full bg-mauve-7" />
+                            Not in SCC
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-2.5 text-mauve-12 max-w-[220px] truncate" title={o.customerName}>{o.customerName}</td>
                       <td className="px-4 py-2.5 text-mauve-11 tabular-nums">{fmtDate(o.orderDate)}</td>
                       <td className="px-4 py-2.5 max-w-[220px] truncate" title={`${o.item} — ${o.itemDesc}`}>
@@ -235,38 +273,10 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
                       <td className="px-4 py-2.5 text-right text-mauve-12 tabular-nums">{o.totalQty.toLocaleString()}</td>
                       <td className="px-4 py-2.5 text-mauve-11 tabular-nums">{fmtDate(o.promiseDate)}</td>
                     </tr>
-                    {isOpen && o.lineItems.length > 0 && (
+                    {isOpen && (
                       <tr className="bg-mauve-2">
-                        <td colSpan={9} className="px-8 py-4 border-t border-mauve-4">
-                          <div className="text-[10px] font-medium text-mauve-11 tracking-wide uppercase mb-2">
-                            All {o.lineItems.length} line item{o.lineItems.length !== 1 ? 's' : ''} on SO {o.macSo}
-                          </div>
-                          <div className="rounded-md border border-mauve-6 bg-white overflow-hidden">
-                            <table className="w-full text-[12px]">
-                              <thead className="bg-mauve-3/50">
-                                <tr className="border-b border-mauve-6">
-                                  <th className="text-left py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide">Line</th>
-                                  <th className="text-left py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide">Part</th>
-                                  <th className="text-left py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide">Description</th>
-                                  <th className="text-right py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide tabular-nums">Qty</th>
-                                  <th className="text-left py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide">Promise</th>
-                                  <th className="text-left py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide">Status</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {o.lineItems.map((li, i) => (
-                                  <tr key={i} className="border-t border-mauve-4">
-                                    <td className="py-1.5 px-3 font-mono text-mauve-11">{li.lineNo}</td>
-                                    <td className="py-1.5 px-3 font-mono text-mauve-12">{li.item}</td>
-                                    <td className="py-1.5 px-3 text-mauve-12">{li.itemDesc}</td>
-                                    <td className="py-1.5 px-3 text-right text-mauve-12 tabular-nums">{li.totalQty.toLocaleString()}</td>
-                                    <td className="py-1.5 px-3 text-mauve-11 tabular-nums">{fmtDate(li.promiseDate)}</td>
-                                    <td className="py-1.5 px-3 text-mauve-11">{li.lineStatus || '—'}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                        <td colSpan={10} className="px-8 py-5 border-t border-mauve-4">
+                          <ExpandedRow orphan={o} lookup={lookup} />
                         </td>
                       </tr>
                     )}
@@ -275,11 +285,11 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center">
+                  <td colSpan={10} className="px-4 py-12 text-center">
                     <div className="text-[13px] text-mauve-11">No orphans match your filters.</div>
-                    {(search || customerFilter !== 'all') && (
+                    {(search || customerFilter !== 'all' || sccFilter !== 'all') && (
                       <button
-                        onClick={() => { setSearch(''); setCustomerFilter('all') }}
+                        onClick={() => { setSearch(''); setCustomerFilter('all'); setSccFilter('all') }}
                         className="text-[12px] text-mauve-12 hover:text-mauve-12 underline mt-1"
                       >
                         Clear filters
@@ -291,6 +301,211 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// ExpandedRow — drill-in view shown when a user clicks an orphan row.
+// Renders BOTH sides of the picture:
+//   1. M2M sales order line items (already had this)
+//   2. Wabtec SCC details + history per line, from orphan-lookup scraper data
+//      Iterates lookup.lines so all 12 multi-line POs show every line, not
+//      just the first (per the user's instruction).
+// =============================================================================
+const ExpandedRow: React.FC<{ orphan: M2MOrphan; lookup: OrphanLookupEntry | undefined }> = ({ orphan, lookup }) => (
+  <div className="space-y-5">
+    {/* M2M side */}
+    <div>
+      <div className="text-[10px] font-medium text-mauve-11 tracking-wide uppercase mb-2">
+        M2M sales order — {orphan.lineItems.length} line item{orphan.lineItems.length !== 1 ? 's' : ''} on SO {orphan.macSo}
+      </div>
+      <div className="rounded-md border border-mauve-6 bg-white overflow-hidden">
+        <table className="w-full text-[12px]">
+          <thead className="bg-mauve-3/50">
+            <tr className="border-b border-mauve-6">
+              <th className="text-left py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide">Line</th>
+              <th className="text-left py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide">Part</th>
+              <th className="text-left py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide">Description</th>
+              <th className="text-right py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide tabular-nums">Qty</th>
+              <th className="text-left py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide">Promise</th>
+              <th className="text-left py-2 px-3 text-[10px] font-medium text-mauve-11 tracking-wide">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orphan.lineItems.map((li, i) => (
+              <tr key={i} className="border-t border-mauve-4">
+                <td className="py-1.5 px-3 font-mono text-mauve-11">{li.lineNo}</td>
+                <td className="py-1.5 px-3 font-mono text-mauve-12">{li.item}</td>
+                <td className="py-1.5 px-3 text-mauve-12">{li.itemDesc}</td>
+                <td className="py-1.5 px-3 text-right text-mauve-12 tabular-nums">{li.totalQty.toLocaleString()}</td>
+                <td className="py-1.5 px-3 text-mauve-11 tabular-nums">{fmtDate(li.promiseDate)}</td>
+                <td className="py-1.5 px-3 text-mauve-11">{li.lineStatus || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {/* SCC side from orphan-lookup */}
+    {lookup && lookup.found && lookup.lines.length > 0 ? (
+      <div>
+        <div className="text-[10px] font-medium text-mauve-11 tracking-wide uppercase mb-2">
+          Wabtec SCC — {lookup.lines.length} line{lookup.lines.length !== 1 ? 's' : ''} captured via lookup
+        </div>
+        <div className="space-y-4">
+          {lookup.lines.map((line, i) => (
+            <SccLineCard key={i} line={line} lineNumber={i + 1} totalLines={lookup.lines.length} />
+          ))}
+        </div>
+      </div>
+    ) : (
+      <div className="rounded-md border border-mauve-6 bg-white p-4 text-[12px] text-mauve-11">
+        Not yet captured by the orphan-lookup scraper. Run{' '}
+        <code className="font-mono text-[11px] bg-mauve-3 px-1 py-0.5 rounded">npm run scrape:orphan-lookup</code>
+        {' '}to populate SCC details + history for this PO.
+      </div>
+    )}
+  </div>
+)
+
+// One SCC line: details + collapsed history. History expands inline so users
+// can drill all the way down without leaving the row.
+const SccLineCard: React.FC<{
+  line: OrphanLookupLine
+  lineNumber: number
+  totalLines: number
+}> = ({ line, lineNumber, totalLines }) => {
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const d = line.details
+  const ship = [d.shipTo.address, d.shipTo.city, d.shipTo.state, d.shipTo.zip].filter(Boolean).join(', ') || '—'
+  const buyer = d.buyer.name ? `${d.buyer.name}${d.buyer.email ? ` (${d.buyer.email})` : ''}` : '—'
+  return (
+    <div className="rounded-md border border-mauve-6 bg-white overflow-hidden">
+      <div className="px-3 py-2 border-b border-mauve-6 bg-mauve-3/50 flex items-center justify-between">
+        <span className="text-[11px] font-medium text-mauve-12">
+          Line {lineNumber} of {totalLines}
+          {d.poLineNumber ? <span className="font-mono text-mauve-11 ml-2">PO Line {d.poLineNumber}</span> : null}
+        </span>
+        <span className="text-[10px] text-mauve-11">scraped {new Date(d.scrapedAt).toLocaleDateString()}</span>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 px-3 py-3 text-[12px]">
+        <Field label="Item" value={d.itemNumber} mono />
+        <Field label="Buyer" value={buyer} />
+        <Field label="Ship via" value={d.sendVia} />
+        <Field label="FOB" value={d.fob} />
+        <Field label="Shipping terms" value={d.shippingTerms} />
+        <Field label="Vendor" value={d.shipFrom.name} />
+        <Field label="Ship to" value={ship} className="col-span-2 md:col-span-3" />
+      </div>
+
+      <div className="border-t border-mauve-6 px-3 py-2">
+        <button
+          onClick={() => setHistoryOpen((v) => !v)}
+          className="text-[11px] font-medium text-mauve-12 hover:text-mauve-12 inline-flex items-center gap-1.5"
+        >
+          <svg
+            className={`w-3 h-3 transition-transform ${historyOpen ? 'rotate-90' : ''}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+          {historyOpen ? 'Hide' : 'Show'} history ({line.history.historyRowCount} row{line.history.historyRowCount !== 1 ? 's' : ''})
+        </button>
+        {historyOpen && line.history.rows.length > 0 && <HistoryTable history={line.history} />}
+        {historyOpen && line.history.rows.length === 0 && (
+          <div className="mt-2 text-[11px] text-mauve-11">No history rows captured (Core Changes filter may have hidden everything).</div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const Field: React.FC<{ label: string; value: string | null; mono?: boolean; className?: string }> = ({
+  label,
+  value,
+  mono,
+  className,
+}) => (
+  <div className={className}>
+    <div className="text-[10px] font-medium text-mauve-11 tracking-wide">{label}</div>
+    <div className={`text-mauve-12 ${mono ? 'font-mono text-[11px]' : ''}`}>{value || '—'}</div>
+  </div>
+)
+
+const HISTORY_COLS = [
+  'Revision number',
+  'Change Type',
+  'Type Of Change',
+  'Before',
+  'After',
+  'Net Change',
+  'Updated time',
+  'Updated by',
+] as const
+
+const HistoryTable: React.FC<{ history: OrphanLookupLine['history'] }> = ({ history }) => {
+  // Sort newest-first by Updated time when parseable
+  const parse = (v: string): number => {
+    const m = (v || '').match(/^(\d{2})-(\d{2})-(\d{4})$/)
+    if (!m) return 0
+    const [, mm, dd, yyyy] = m
+    const t = new Date(`${yyyy}-${mm}-${dd}T00:00:00`).getTime()
+    return Number.isFinite(t) ? t : 0
+  }
+  const sorted = useMemo(() =>
+    [...history.rows].sort((a, b) => parse(b['Updated time'] || '') - parse(a['Updated time'] || '')),
+  [history.rows])
+
+  return (
+    <div className="mt-3 rounded-md border border-mauve-6 bg-white overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-[11px]">
+          <thead className="bg-mauve-3/50">
+            <tr className="border-b border-mauve-6">
+              {HISTORY_COLS.map((col) => (
+                <th key={col} className="text-left py-1.5 px-2 text-[10px] font-medium text-mauve-11 tracking-wide whitespace-nowrap">
+                  {col === 'Updated time' ? 'Updated' : col === 'Updated by' ? 'By' : col === 'Revision number' ? 'Rev' : col}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((row, i) => {
+              const kind = (row['Type Of Change'] || '').toUpperCase()
+              const dot =
+                kind === 'CORE' ? 'bg-red-500'
+                : kind === 'INITIAL' ? 'bg-blue-500'
+                : 'bg-mauve-7'
+              return (
+                <tr key={i} className="border-t border-mauve-4">
+                  {HISTORY_COLS.map((col) => {
+                    const v = row[col] || ''
+                    if (col === 'Type Of Change' && v) {
+                      return (
+                        <td key={col} className="py-1 px-2">
+                          <span className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-full border border-mauve-6 bg-white text-[10px] font-medium text-mauve-12">
+                            <span className={`w-1 h-1 rounded-full ${dot}`} />
+                            {kind}
+                          </span>
+                        </td>
+                      )
+                    }
+                    const isMono = col === 'Updated time' || col === 'Revision number'
+                    return (
+                      <td key={col} className={`py-1 px-2 text-mauve-12 whitespace-nowrap ${isMono ? 'font-mono' : ''}`}>
+                        {v || <span className="text-mauve-7">—</span>}
+                      </td>
+                    )
+                  })}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   )

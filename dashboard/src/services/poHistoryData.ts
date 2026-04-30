@@ -23,6 +23,59 @@ export async function loadPoHistory(): Promise<PoHistoryEntry[]> {
   return data.filter((e) => e.poNumber)
 }
 
+// Merge orphan-lookup history into the same shape PoHistory uses, so any PO
+// that was found by the orphan-lookup scraper is searchable on the PO History
+// page. Each line of an orphan PO becomes its own entry — for the 12 POs
+// with multiple lines that means multiple history entries per PO number;
+// the search/select UI just shows the union.
+export async function loadOrphanHistory(): Promise<PoHistoryEntry[]> {
+  try {
+    const res = await fetch('/sample-data/wabtec-orphan-lookup.json')
+    if (!res.ok) return []
+    const arr = (await res.json()) as Array<{
+      po: string
+      lines: Array<{
+        rowIdx: number
+        history: {
+          poNumber: string
+          historyRowCount: number
+          columns: PoHistoryColumn[]
+          rows: PoHistoryRow[]
+          scrapedAt: string
+        }
+      }>
+    }>
+    const out: PoHistoryEntry[] = []
+    for (const entry of arr) {
+      for (const line of entry.lines || []) {
+        if (!line.history) continue
+        out.push({
+          poNumber: entry.po,
+          rowIdx: line.rowIdx,
+          pageNum: 0, // not applicable — orphan lookup doesn't paginate the same way
+          historyRowCount: line.history.historyRowCount || line.history.rows?.length || 0,
+          columns: line.history.columns || [],
+          rows: line.history.rows || [],
+          scrapedAt: line.history.scrapedAt,
+        })
+      }
+    }
+    return out
+  } catch {
+    return []
+  }
+}
+
+// Combined loader — main history + orphan-lookup history merged. The PO
+// History page should call this; the union is searchable in one view.
+export async function loadAllHistory(): Promise<PoHistoryEntry[]> {
+  const [main, orphan] = await Promise.all([
+    loadPoHistory().catch(() => [] as PoHistoryEntry[]),
+    loadOrphanHistory(),
+  ])
+  return [...main, ...orphan]
+}
+
 export const findHistoryForPo = (
   entries: PoHistoryEntry[],
   poNumber: string,

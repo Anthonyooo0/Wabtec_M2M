@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import {
-  loadPoHistory,
+  loadAllHistory,
   type PoHistoryEntry,
   type PoHistoryRow,
 } from '../services/poHistoryData'
@@ -30,7 +30,9 @@ export const PoHistory: React.FC = () => {
   const [selected, setSelected] = useState<string | null>(null)
 
   useEffect(() => {
-    loadPoHistory()
+    // Includes both the nightly-scrape's per-PO history (~1000 POs) AND the
+    // orphan-lookup scraper's per-line history (~932 lines across 920 POs).
+    loadAllHistory()
       .then(setEntries)
       .catch((e) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoading(false))

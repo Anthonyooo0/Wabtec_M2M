@@ -10,7 +10,10 @@ import { PoAwaitingAcceptance } from './views/PoAwaitingAcceptance'
 import { PoHistory } from './views/PoHistory'
 import { M2MOrphans } from './views/M2MOrphans'
 import { loadWabtecPOs, type WabtecPO } from './services/wabtecData'
-import { loadM2MPOs, loadM2MOrphans, diff, isDiscrepancy, type M2MPO, type M2MOrphan, type Discrepancy } from './services/m2mData'
+import {
+  loadM2MPOs, loadM2MOrphans, loadOrphanLookup, diff, isDiscrepancy,
+  type M2MPO, type M2MOrphan, type OrphanLookupEntry, type Discrepancy,
+} from './services/m2mData'
 import { loadPoHistory, buildAcceptedDateIndex } from './services/poHistoryData'
 import { PoCollaborationProvider } from './contexts/PoCollaborationContext'
 import { PoCollaborationDrawer } from './components/PoCollaborationDrawer'
@@ -33,6 +36,7 @@ const App: React.FC = () => {
   const [orphans, setOrphans] = useState<M2MOrphan[]>([])
   const [orphanStats, setOrphanStats] = useState<{ totalM2MWabtec: number; matchedToScc: number }>({ totalM2MWabtec: 0, matchedToScc: 0 })
   const [orphansError, setOrphansError] = useState<string | null>(null)
+  const [orphanLookup, setOrphanLookup] = useState<Map<string, OrphanLookupEntry>>(new Map())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastSync, setLastSync] = useState<string | null>(null)
@@ -86,6 +90,13 @@ const App: React.FC = () => {
         .catch((e) => {
           setOrphansError(e instanceof Error ? e.message : String(e))
         })
+
+      // Orphan-lookup data — output of scrape-orphan-lookup.ts. Static JSON
+      // shipped under /sample-data. Empty Map if file missing — UI shows
+      // "Not in SCC" instead of crashing.
+      loadOrphanLookup()
+        .then(setOrphanLookup)
+        .catch(() => setOrphanLookup(new Map()))
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       setError(msg)
@@ -189,6 +200,7 @@ const App: React.FC = () => {
               matchedToScc={orphanStats.matchedToScc}
               loading={loading}
               error={orphansError}
+              orphanLookup={orphanLookup}
             />
           )}
           {currentView === 'changelog' && (
