@@ -74,6 +74,7 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
   const [search, setSearch] = useState('')
   const [customerFilter, setCustomerFilter] = useState<string>('all')
   const [sccFilter, setSccFilter] = useState<'all' | 'found' | 'not-found'>('all')
+  const [sccStatusFilter, setSccStatusFilter] = useState<string>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
 
   const customers = useMemo(() => {
@@ -84,6 +85,19 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
 
   const lookupKey = (po: string) => po.trim().toUpperCase()
 
+  // Distinct SCC statuses present in the loaded orphan-lookup data. Pulled
+  // dynamically so we don't hardcode "Accepted / Cancelled / Revised" — if
+  // SCC ever introduces a new status it just shows up.
+  const sccStatuses = useMemo(() => {
+    const set = new Set<string>()
+    for (const o of orphans) {
+      const lookup = orphanLookup.get(lookupKey(o.wabtecPo))
+      const s = sccStatusFromLookup(lookup)
+      if (s) set.add(s)
+    }
+    return Array.from(set).sort()
+  }, [orphans, orphanLookup])
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return orphans.filter((o) => {
@@ -92,6 +106,10 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
       const inScc = !!(lookup && lookup.found)
       if (sccFilter === 'found' && !inScc) return false
       if (sccFilter === 'not-found' && inScc) return false
+      if (sccStatusFilter !== 'all') {
+        const status = sccStatusFromLookup(lookup) || ''
+        if (status !== sccStatusFilter) return false
+      }
       if (!q) return true
       return (
         o.wabtecPo.toLowerCase().includes(q) ||
@@ -101,7 +119,7 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
         o.itemDesc.toLowerCase().includes(q)
       )
     })
-  }, [orphans, search, customerFilter, sccFilter, orphanLookup])
+  }, [orphans, search, customerFilter, sccFilter, sccStatusFilter, orphanLookup])
 
   const foundInSccCount = useMemo(
     () => orphans.filter((o) => orphanLookup.get(lookupKey(o.wabtecPo))?.found).length,
@@ -211,6 +229,18 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
               <option value="found">Found in SCC</option>
               <option value="not-found">Not in SCC</option>
             </select>
+            <select
+              value={sccStatusFilter}
+              onChange={(e) => setSccStatusFilter(e.target.value)}
+              disabled={sccStatuses.length === 0}
+              className="px-3 py-1.5 text-[13px] border border-mauve-6 rounded-md bg-mauve-2 hover:bg-white focus:bg-white focus:border-mauve-8 focus:ring-0 outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={sccStatuses.length === 0 ? 'No SCC status data loaded' : 'Filter by SCC status (Accepted / Cancelled / Revised / etc.)'}
+            >
+              <option value="all">All SCC statuses</option>
+              {sccStatuses.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
           </div>
           <button
             onClick={handleExportCSV}
@@ -287,9 +317,9 @@ export const M2MOrphans: React.FC<M2MOrphansProps> = ({
                 <tr>
                   <td colSpan={10} className="px-4 py-12 text-center">
                     <div className="text-[13px] text-mauve-11">No orphans match your filters.</div>
-                    {(search || customerFilter !== 'all' || sccFilter !== 'all') && (
+                    {(search || customerFilter !== 'all' || sccFilter !== 'all' || sccStatusFilter !== 'all') && (
                       <button
-                        onClick={() => { setSearch(''); setCustomerFilter('all'); setSccFilter('all') }}
+                        onClick={() => { setSearch(''); setCustomerFilter('all'); setSccFilter('all'); setSccStatusFilter('all') }}
                         className="text-[12px] text-mauve-12 hover:text-mauve-12 underline mt-1"
                       >
                         Clear filters
