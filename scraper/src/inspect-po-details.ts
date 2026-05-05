@@ -359,14 +359,49 @@ interface PoHistoryEntry {
   error?: string
 }
 
+// Close the PO Details modal AND nuke any lingering cdk-overlay-backdrop.
+// The mat-dialog-container removes itself on close, but the backdrop element
+// can persist and block pointer events on the grid below — that's what made
+// every other row's cell click time out (verbatim of the working fix from
+// scrape-orphan-lookup.ts).
 async function closeModal(page: Page): Promise<void> {
-  const closeBtn = page.locator('button:has-text("×"), [aria-label="Close"]').first()
-  if ((await closeBtn.count()) > 0) {
-    await closeBtn.click().catch(() => {})
-  } else {
-    await page.keyboard.press('Escape')
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const closeBtn = page
+      .locator('mat-dialog-container, [role="dialog"]')
+      .locator('button:has-text("×"), [aria-label="Close"]')
+      .first()
+
+    const btnCount = await closeBtn.count()
+    if (btnCount > 0) {
+      await closeBtn.click({ force: true }).catch(() => {})
+    } else {
+      await page.keyboard.press('Escape').catch(() => {})
+    }
+
+    await page.waitForTimeout(400)
+
+    const state = await page.evaluate(() => {
+      const dialog = document.querySelectorAll('mat-dialog-container, [role="dialog"]').length
+      const backdrops = document.querySelectorAll(
+        '.cdk-overlay-backdrop:not(.cdk-overlay-transparent-backdrop)',
+      )
+      let removed = 0
+      if (dialog === 0) {
+        backdrops.forEach((b) => { b.remove(); removed++ })
+      }
+      const overlayPanes = document.querySelectorAll('.cdk-overlay-pane:empty')
+      overlayPanes.forEach((p) => p.remove())
+      return { dialog, backdrops: backdrops.length - removed }
+    })
+
+    if (state.dialog === 0 && state.backdrops === 0) return
+
+    if (attempt === 2) {
+      await page.mouse.click(10, 10).catch(() => {})
+      await page.waitForTimeout(300)
+    }
   }
-  await page.waitForTimeout(600)
+  console.log('    [closeModal] WARNING: modal/backdrop still up after 4 attempts')
 }
 
 async function scrapeOnePoHistory(
