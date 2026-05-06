@@ -40,6 +40,15 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastSync, setLastSync] = useState<string | null>(null)
+  // Per-file modification times sourced from HTTP last-modified — tells the
+  // user when each scraper last wrote its output, separate from when the
+  // user clicked refresh.
+  const [freshness, setFreshness] = useState<{
+    scc: Date | null
+    details: Date | null
+    history: Date | null
+    orphan: Date | null
+  }>({ scc: null, details: null, history: null, orphan: null })
 
   const [toast, setToast] = useState<{
     message: string
@@ -97,6 +106,24 @@ const App: React.FC = () => {
       loadOrphanLookup()
         .then(setOrphanLookup)
         .catch(() => setOrphanLookup(new Map()))
+
+      // Per-file scrape timestamps from HTTP last-modified header. Non-fatal —
+      // if a HEAD fails we just leave that stage's freshness as null.
+      const head = async (url: string): Promise<Date | null> => {
+        try {
+          const r = await fetch(url, { method: 'HEAD' })
+          const lm = r.headers.get('last-modified')
+          return lm ? new Date(lm) : null
+        } catch { return null }
+      }
+      Promise.all([
+        head('/sample-data/wabtec-scc-po.csv'),
+        head('/sample-data/wabtec-po-details.json'),
+        head('/sample-data/po-history.json'),
+        head('/sample-data/wabtec-orphan-lookup.json'),
+      ]).then(([scc, details, history, orphan]) =>
+        setFreshness({ scc, details, history, orphan })
+      )
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       setError(msg)
@@ -168,6 +195,22 @@ const App: React.FC = () => {
               <>
                 <span className="w-px h-4 bg-mauve-4" />
                 <span className="text-[11px] text-mauve-11">Last sync · <span className="text-mauve-12 tabular-nums">{lastSync}</span></span>
+              </>
+            )}
+            {(freshness.scc || freshness.details || freshness.history || freshness.orphan) && (
+              <>
+                <span className="w-px h-4 bg-mauve-4" />
+                <span className="text-[11px] text-mauve-11">
+                  Scraped ·{' '}
+                  <span className="text-mauve-12 tabular-nums">
+                    {[
+                      freshness.scc && `SCC ${freshness.scc.toLocaleDateString()}`,
+                      freshness.details && `Ship-to ${freshness.details.toLocaleDateString()}`,
+                      freshness.history && `History ${freshness.history.toLocaleDateString()}`,
+                      freshness.orphan && `Orphan ${freshness.orphan.toLocaleDateString()}`,
+                    ].filter(Boolean).join(' · ')}
+                  </span>
+                </span>
               </>
             )}
           </div>
