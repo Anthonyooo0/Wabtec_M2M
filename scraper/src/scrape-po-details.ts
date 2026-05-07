@@ -220,16 +220,54 @@ async function scrapeOneRow(
   console.log(`    Via:      ${details.sendVia || '—'}   FOB: ${details.fob || '—'}   Terms: ${details.shippingTerms || '—'}`)
   console.log(`    (${fieldCount} total fields)`)
 
-  // Close the modal for the next iteration.
-  const closeBtn = page.locator('button:has-text("×"), [aria-label="Close"]').first()
-  if ((await closeBtn.count()) > 0) {
-    await closeBtn.click().catch(() => {})
-  } else {
-    await page.keyboard.press('Escape')
-  }
-  await page.waitForTimeout(600)
+  // Close the modal for the next iteration. Verbatim of the working fix
+  // already in scrape-orphan-lookup.ts and inspect-po-details.ts: SCC's
+  // mat-dialog-container removes itself, but the .cdk-overlay-backdrop can
+  // persist and block pointer events on the grid below — that's what made
+  // the Next button click time out at the page boundary.
+  await closeModal(page)
 
   return details
+}
+
+async function closeModal(page: Page): Promise<void> {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const closeBtn = page
+      .locator('mat-dialog-container, [role="dialog"]')
+      .locator('button:has-text("×"), [aria-label="Close"]')
+      .first()
+
+    const btnCount = await closeBtn.count()
+    if (btnCount > 0) {
+      await closeBtn.click({ force: true }).catch(() => {})
+    } else {
+      await page.keyboard.press('Escape').catch(() => {})
+    }
+
+    await page.waitForTimeout(400)
+
+    const state = await page.evaluate(() => {
+      const dialog = document.querySelectorAll('mat-dialog-container, [role="dialog"]').length
+      const backdrops = document.querySelectorAll(
+        '.cdk-overlay-backdrop:not(.cdk-overlay-transparent-backdrop)',
+      )
+      let removed = 0
+      if (dialog === 0) {
+        backdrops.forEach((b) => { b.remove(); removed++ })
+      }
+      const overlayPanes = document.querySelectorAll('.cdk-overlay-pane:empty')
+      overlayPanes.forEach((p) => p.remove())
+      return { dialog, backdrops: backdrops.length - removed }
+    })
+
+    if (state.dialog === 0 && state.backdrops === 0) return
+
+    if (attempt === 2) {
+      await page.mouse.click(10, 10).catch(() => {})
+      await page.waitForTimeout(300)
+    }
+  }
+  console.log('    [closeModal] WARNING: modal/backdrop still up after 4 attempts')
 }
 
 // Walks the grid page-by-page. Each page has up to ROWS_PER_PAGE rows; the
